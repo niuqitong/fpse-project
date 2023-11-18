@@ -52,6 +52,11 @@ On program start, the data collection module (Collector) periodically collects s
 
 For specific module type declarations, please refer to .mli files in the ./src directory.
 
+### Module type declarations
+[collector.mli](../src/collector.mli)  
+[parser.mli](../src/parser.mli)  
+[calculator.mli](../src/calculator.mli)
+
 ## Mock of Use
 
 This section provides a mock of the use of our application by showing the command to run the executable and the corresponding output. As a command line executable, the monitor tool does not necessarily require any arguments. It should run like the following:
