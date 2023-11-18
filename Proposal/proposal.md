@@ -19,26 +19,26 @@ In this section, we will first present the list of libraries that we plan to uti
 
 <br>
 
-![img](./images/Figure1TestForAsyncLibrary.png)
+![img](./images/Figure1TestAsyncLibrary.png)
 > Figure 1. Test for Async Library  
   
 
 
 <br>
 
-![img](./images/Figure2TestForCohttpLibrary.png)
+![img](./images/Figure2TestCohttpLibrary.png)
 
 > Figure 2. Test for Cohttp Library
 
 <br>
 
-![img](./images/Figure3TestForLwtLibrary.png)
+![img](./images/Figure3TestLwtLibrary.png)
 
 > Figure 3. Test for Lwt Library
 
 <br>
 
-![img](./images/Figure4TestForBatteriesLibrary.png)
+![img](./images/Figure4TestBatteriesLibrary.png)
 
 > Figure 4. Test for Batteries Library
 
