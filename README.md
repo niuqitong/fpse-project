@@ -1,9 +1,9 @@
 # A linux system performance monitoring tool
-## [Project Proposal](./Proposal/proposal.md)
+# [Project Proposal](./Proposal/proposal.md)
 
-## Implementation details
-### Calculator
-#### CPU usage(percentage) 
+# Implementation details
+## Calculator
+### CPU usage(percentage) 
 **Input:**
 ```ocaml
 type cpu_stats = {
@@ -19,7 +19,7 @@ type cpu_stats = {
 ```
 **output**:
 ```ocaml
-type cpu_usage = {
+type cpu_usage_display = {
   cpu_id : string;
   usage_pct : float;
 }
@@ -43,7 +43,7 @@ Assume you read the following `/proc/stat` data at two different times (Time1 an
 - **Time1** - `cpu  4705 150 1120 16250 520 20 5`
 - **Time2** - `cpu  4800 160 1200 16500 530 25 10`
 
-**How to Calculate CPU Usage**:
+**Calculations**:
 
 **Step 1: Calculate Total and Idle Times**
 - Calculate the total CPU time by summing all time values.
@@ -67,3 +67,153 @@ Calculating ΔTotal and ΔIdle:
 - ΔIdle = (16500 - 16250)
 
 Then, calculate the CPU Usage % with them
+
+### Memory usage
+
+**Input**
+
+```ocaml
+type memory_info = {
+  mem_total: int;  (* in Kilobytes *)
+  mem_free: int;   (* in Kilobytes *)
+  swap_total: int; (* in Kilobytes *)
+  swap_free: int;  (* in Kilobytes *)
+}
+```
+
+**Output**
+
+```ocaml
+type memory_stats_display = {
+  used_memory: float;    (* in GB *)
+  total_memory: float;   (* in GB *)
+  used_swap: float;      (* in GB *)
+  total_swap: float;     (* in GB *)
+}
+```
+
+**Calculations:**
+
+- **Used Memory**: `Used Memory = (MemTotal - MemFree) / (1024 * 1024)`
+- **Used Swap**: `Used Swap = (SwapTotal - SwapFree) / (1024 * 1024)`
+
+### Load average
+
+**Input**
+```ocaml
+type load_average_stats = {
+  one_min_avg : float;
+  five_min_avg : float;
+  fifteen_min_avg : float;
+}
+```
+**Output**
+```ocaml
+type load_average_display = {
+  one_min_avg : float;
+  five_min_avg : float;
+  fifteen_min_avg : float;
+}
+```
+**Load average can be directly read. No need for further calculation. Input and output are the same. Here is just for the purpose of explicit layering**.  
+The load average is typically calculated as a moving average of the sum of the number of runnable processes and the number of processes in uninterruptible sleep.  
+In Linux, the load average can usually be read directly from the `/proc/loadavg` file, which provides the 1-minute, 5-minute, and 15-minute load averages. For example, the file might contain:
+
+```bash
+0.00 0.01 0.05 1/189 1234
+```
+Here, 0.00, 0.01, and 0.05 are the 1-minute, 5-minute, and 15-minute load averages, respectively.
+
+### Process count
+
+**Input**
+
+```ocaml
+type process_count = {
+  total_processes: int;
+  total_threads: int;
+  n_running_tasks: int;  (* Detailed info for a subset of processes *)
+}
+```
+
+
+
+**Output**
+
+```ocaml
+type process_count_display = {
+  total_processes: int;
+  total_threads: int;
+  n_running_tasks: int;  (* Detailed info for a subset of processes *)
+}
+```
+
+
+
+### Process list
+
+**Input**
+
+```ocaml
+type process_stats = {
+  pid: int;
+  utime: int;
+  stime: int;
+  total_cpu_time: int;
+  vm_rss: int; (* resident set size *)
+  uid: int; (* used for get user *)
+  cmdline: string;
+  (* Additional fields as needed based on /proc/[pid]/stat and /proc/[pid]/status *)
+}
+type process_stats_list = process_stats list
+```
+
+
+
+**Output**  
+
+```ocaml
+type process_stats_display = {
+  pid: int;
+  user: string;
+  state: string;  (* e.g., "running", "sleeping", etc. *)
+  cpu_percentage: float;
+  mem_percentage: float;
+  command: string;
+  (* Additional fields as needed based on /proc/[pid]/stat and /proc/[pid]/status *)
+}
+type process_stats_list_display = process_stats_display list
+```
+
+**CPU usage calculation**
+
+- From `/proc/[pid]/stat`, get the process's `utime` and `stime`.
+- Calculate the total time spent for the process: `total_time = utime + stime`.
+- Get total CPU time from `/proc/stat`.
+- CPU usage % = `(total_time / total_cpu_time) * 100`.
+
+**Memory usage calculation**
+
+- From `/proc/[pid]/status`, get `VmRSS` (Resident Set Size).
+- Get total system memory from `/proc/meminfo`.
+- Memory usage % = `(VmRSS / total_memory) * 100`.
+
+**Get username from `uid`**
+
+Use system calls provided by the OS to look up user information based on the UID. In OCaml, use the Unix module which provides access to system calls.
+
+- Use the `Unix.getpwuid` function, which returns a record containing the username and other details of the user with the given UID.
+
+Here’s an example in OCaml:
+
+```ocaml
+let get_username_from_uid uid =
+  try
+    let user_entry = Unix.getpwuid uid in
+    user_entry.Unix.pw_name
+  with
+  | Not_found -> "Unknown"
+```
+
+Or read `/etc/passwd`
+
