@@ -1,0 +1,11 @@
+(rule
+  (target calculator.zip)
+  (deps 
+    src/calculator.ml
+    src/calculator.mli
+    src/dune
+    tests/tests.ml
+    tests/dune
+  )
+  (action
+    (run zip -R calculator.zip %{deps})))

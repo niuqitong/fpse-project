@@ -1,0 +1,10 @@
+; (library
+;   (name calculator)
+;   (public_name calculator))
+
+(library
+  (name calculator)
+  (modules calculator)
+  (libraries 
+    core)
+    )

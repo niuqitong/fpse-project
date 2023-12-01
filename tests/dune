@@ -1,0 +1,9 @@
+(test
+  (name tests)
+  (libraries
+    core
+    ounit2
+    calculator
+  )
+  (flags (:standard -w -27))
+  )
