@@ -1,13 +1,22 @@
+[@@@warning "-34"]
+
 open Core
 open OUnit2
 open Calculator
+module P = Collector
+module C = Calculator
+
+type cpu_stats = P.cpu_stats
+type memory_info = P.memory_info
+type load_average_stats = P.load_average_stats
+type process_count = P.process_count
 
 let assert_float_equal ~msg a b =
   assert_equal ~msg 1 ( Float.compare 0.01 (Float.abs (a -. b)) )
 
 let test_calculate_cpu_usage _ =
   let cpu_stats_sample = {
-    cpu_id = "cpu0";
+    P.cpu_id = "cpu0";
     user = 4705;
     nice = 150;
     system = 1120;
@@ -22,7 +31,7 @@ let test_calculate_cpu_usage _ =
 
 let test_calculate_memory_usage _ =
   let memory_info_sample = {
-    mem_total = 8000000;
+    P.mem_total = 8000000;
     mem_free = 2000000;
     swap_total = 4000000;
     swap_free = 3000000;
