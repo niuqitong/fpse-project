@@ -1,3 +1,13 @@
+open Core
+open Collector
+module P = Collector
+
+type cpu_stats = P.cpu_stats
+type memory_info = P.memory_info
+type load_average_stats = P.load_average_stats
+type process_count = P.process_count
+
+(*
 type cpu_stats = {
   cpu_id : string;
   user : int;
@@ -27,6 +37,7 @@ type process_count = {
   total_threads: int;
   n_running_tasks: int;
 } 
+*)
 
 type calculator_output = {
     cpu_id: string;
