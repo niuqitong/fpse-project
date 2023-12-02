@@ -3,8 +3,20 @@
 ;   (public_name calculator))
 
 (library
+  (name collector)
+  (modules collector)
+  (libraries core batteries)
+  (preprocess (pps ppx_jane bisect_ppx)))
+
+(library
   (name calculator)
   (modules calculator)
-  (libraries 
-    core)
-    )
+  (libraries core collector)
+  (preprocess (pps ppx_jane bisect_ppx)))
+
+(executable
+  (name monitor)
+  (modules monitor)
+  (libraries core core_unix core_unix.sys_unix stdio batteries calculator collector)
+  (preprocess (pps ppx_jane))
+  )
