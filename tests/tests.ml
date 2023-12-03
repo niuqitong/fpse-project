@@ -42,10 +42,7 @@ let test_calculate_cpu_usage _ =
     { cpu_id = "cpu1"; cpu_usage_pct = 28.63 }  
   ] in
   let actual = calculate_cpu_usage cpu_stats_samples in
-  (* List.iter2 ~f:(fun expected_cpu actual_cpu ->
-    assert_float_equal ~msg:("CPU usage calculation for " ^ expected_cpu.cpu_id)
-                        expected_cpu.cpu_usage_pct actual_cpu.cpu_usage_pct
-  ) expected actual; *)
+
   assert_equal (List.length expected) (List.length actual) ~msg:"List length mismatch";
   
   let compare_cpu_usage expected_cpu actual_cpu =
@@ -62,9 +59,9 @@ let test_calculate_memory_usage _ =
   } in
   let expected_memory, expected_swap = 5.72, 0.95 in
   let used_memory, _ = calculate_memory_usage memory_info_sample in
-  (* let _, used_swap = calculate_swap_usage memory_info_sample in *)
-  assert_float_equal ~msg:"Memory usage calculation" used_memory  expected_memory
-  (* assert_float_equal ~msg:"Swap usage calculation" used_swap expected_swap *)
+  let used_swap, _ = calculate_swap_usage memory_info_sample in
+  assert_float_equal ~msg:"Memory usage calculation" used_memory  expected_memory;
+  assert_float_equal ~msg:"Swap usage calculation" used_swap expected_swap
 
 
 let suite =
