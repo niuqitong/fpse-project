@@ -18,6 +18,6 @@ let () =
     | Some load_average -> load_average
     | None -> failwith "read_load_average error"
   in
-  let final_process_count = P.read_process_count ()
-  in C.calculate final_cpu_status final_memory_info final_load_average final_process_count
+  let final_process_count = P.read_process_count ()in 
+  C.calculate final_cpu_status final_memory_info final_load_average final_process_count
   |> C.print_calculator_output

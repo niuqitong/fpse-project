@@ -1,11 +1,14 @@
 (rule
-  (target calculator.zip)
+  (target monitor.zip)
   (deps 
     src/calculator.ml
+    src/collector.ml
+    src/monitor.ml
+    src/collector.mli
     src/calculator.mli
     src/dune
     tests/tests.ml
     tests/dune
   )
   (action
-    (run zip -R calculator.zip %{deps})))
+    (run zip -R monitor.zip %{deps})))

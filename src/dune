@@ -1,7 +1,3 @@
-; (library
-;   (name calculator)
-;   (public_name calculator))
-
 (library
   (name collector)
   (modules collector)
@@ -11,7 +7,7 @@
 (library
   (name calculator)
   (modules calculator)
-  (libraries core collector)
+  (libraries core collector core_unix core_unix.sys_unix)
   (preprocess (pps ppx_jane bisect_ppx)))
 
 (executable
