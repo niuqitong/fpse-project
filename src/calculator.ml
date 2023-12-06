@@ -11,13 +11,24 @@ type cpu_stats = P.cpu_stats
 type memory_info = P.memory_info
 type load_average_stats = P.load_average_stats
 type process_count = P.process_count
+type process_stats = P.process_stats
+
+type process_stats_display = {
+  pid: int;
+  user: string;
+  state: string;  (* e.g., "running", "sleeping", etc. *)
+  cpu_percentage: float;
+  mem_percentage: float;
+  command: string;
+}
 
 type calculator_output = {
     all_cpu_stats: cpu_usage_display list;
     memory_usage_gb: float * float; (* (Used Memory, all memory) in GB *)
     swap_usage_gb: float * float; (* (Used swap, all Swap) in GB *)
     load_avg: load_average_stats;
-    process_stats: process_count;
+    process_cnt: process_count;
+    proc_ls: process_stats_display list;
 }
 let calculate_cpu_usage (stats_list: cpu_stats list) : cpu_usage_display list =
   List.map ~f:(fun stats ->
@@ -28,6 +39,32 @@ let calculate_cpu_usage (stats_list: cpu_stats list) : cpu_usage_display list =
 
     { cpu_id = stats.cpu_id; cpu_usage_pct }
   ) stats_list
+
+let calculate_cpu_percentage utime stime total_cpu_time =
+  let total_time = float_of_int (utime + stime) in
+  (total_time /. float_of_int total_cpu_time) *. 100.0
+
+let calculate_memory_percentage total_mem_kb vm_rss =
+  let memory_usage = float_of_int vm_rss in
+  (memory_usage /. (float_of_int total_mem_kb)) *. 100.0
+
+let calculate_process_list (total_mem_kb : int) (proc_ls: process_stats list) : process_stats_display list =
+  List.map proc_ls ~f:(fun proc ->
+    let cpu_p= calculate_cpu_percentage proc.utime proc.stime proc.total_cpu_time in
+    let mem_p = calculate_memory_percentage total_mem_kb proc.vm_rss in
+    (* need to read files to get the following 2 fields. 
+       so it's better to leave it to the collector *)
+    (* let user = get_username_from_uid proc.uid in *) 
+    (* let state = get_process_state proc.pid in *)
+    {
+      pid = proc.pid;
+      state = proc.state;
+      cpu_percentage = cpu_p;
+      mem_percentage = mem_p;
+      command = proc.cmdline;
+      user = proc.username;
+    })
+  
 
 
 let calculate_memory_usage (info: memory_info) : (float * float) =
@@ -40,14 +77,14 @@ let calculate_swap_usage (info: memory_info) : (float * float) =
   (used_swap_gb, kb_to_gb info.swap_total)  
   
 let calculate (cpu_stats_ls: cpu_stats list) (mem_info: memory_info) 
-                (load_avg_stats: load_average_stats) (proc_count: process_count) : calculator_output =
+                (load_avg_stats: load_average_stats) (proc_count: process_count) (proc_list: process_stats list): calculator_output =
   {
-    (* cpu_id = cpu_stats.cpu_id; *)
     all_cpu_stats = calculate_cpu_usage cpu_stats_ls;
     memory_usage_gb = calculate_memory_usage mem_info;
     swap_usage_gb = calculate_swap_usage mem_info;
     load_avg = load_avg_stats;
-    process_stats = proc_count;
+    process_cnt = proc_count;
+    proc_ls = calculate_process_list mem_info.mem_total proc_list
   }
 
  
@@ -58,7 +95,7 @@ output format
 2[|||||           19.7%]  3[|||             13.3%]  
 Tasks: 749, 2635 thr, 0 kthr; 4 running    
 Load average: 3.23 3.08 2.99  
-Mem[|||||||||||||||||                   17.7G/36.0G] 
+Mem[|||||||||||||||||                   10.2G/16.0G] 
 Swp[                                          0K/0K]  
 
 *)
@@ -83,10 +120,10 @@ let print_calculator_output (output: calculator_output) =
   Printf.printf "\n";
 
   Printf.printf "Tasks: %d, %d thr, %d kthr; %d running\n"
-    output.process_stats.total_processes 
-    output.process_stats.total_threads
+    output.process_cnt.total_processes 
+    output.process_cnt.total_threads
     0 
-    output.process_stats.n_running_tasks;
+    output.process_cnt.n_running_tasks;
 
   Printf.printf "Load average: %.2f %.2f %.2f\n"
     output.load_avg.one_min_avg output.load_avg.five_min_avg output.load_avg.fifteen_min_avg;
@@ -97,6 +134,20 @@ let print_calculator_output (output: calculator_output) =
 
   let (used_swap_gb, total_swap_gb) = output.swap_usage_gb in
   let swap_usage_pct = used_swap_gb /. total_swap_gb *. 100.0 in
-  Printf.printf "Swp[%s%.1fG/%.1fG] \n" (print_bar swap_usage_pct 40) used_swap_gb total_swap_gb
+  Printf.printf "Swp[%s%.1fG/%.1fG] \n" (print_bar swap_usage_pct 40) used_swap_gb total_swap_gb;
+
+  Printf.printf "\n%5s %10s %4s %4s %7s %s\n" "PID" "USER" "CPU%" "MEM%" "STATE" "COMMAND";
+  
+  let first_ten_procs = List.take output.proc_ls 10 in
+
+  List.iter first_ten_procs ~f:(fun proc ->
+    Printf.printf "%5d %10s %4.1f %4.1f %7s %s\n"
+      proc.pid
+      proc.user
+      proc.cpu_percentage
+      proc.mem_percentage
+      proc.state
+      proc.command
+  )
 
   (* Core_unix.sleep 2; *)

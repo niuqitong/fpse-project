@@ -28,6 +28,19 @@ type process_count = {
   n_running_tasks: int;
 };;
 
+
+type process_stats = {
+  pid: int;
+  utime: int;
+  stime: int;
+  total_cpu_time: int;
+  vm_rss: int;
+  state: string;
+  username: string;
+  uid: int;
+  cmdline: string;
+};;
+
 val read_cpu_stats : unit -> cpu_stats list
 val read_memory_info : unit -> memory_info option
 val read_load_average : unit -> load_average_stats option

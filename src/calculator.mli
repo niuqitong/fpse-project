@@ -4,9 +4,20 @@ type cpu_stats = P.cpu_stats
 type memory_info = P.memory_info
 type load_average_stats = P.load_average_stats
 type process_count = P.process_count
+type process_stats = P.process_stats
+
 type cpu_usage_display = {
   cpu_id: string;
   cpu_usage_pct: float;
+}
+
+type process_stats_display = {
+  pid: int;
+  user: string;
+  state: string;  (* e.g., "running", "sleeping", etc. *)
+  cpu_percentage: float;
+  mem_percentage: float;
+  command: string;
 }
 
 type calculator_output = {
@@ -14,11 +25,12 @@ type calculator_output = {
     memory_usage_gb: float * float; (* (Used Memory, all memory) in GB *)
     swap_usage_gb: float * float; (* (Used swap, all Swap) in GB *)
     load_avg: load_average_stats;
-    process_stats: process_count;
+    process_cnt: process_count;
+    proc_ls: process_stats_display list;
 }
 
 val calculate_cpu_usage : cpu_stats list -> cpu_usage_display list
 val calculate_memory_usage : memory_info -> (float * float)
 val calculate_swap_usage : memory_info -> (float * float)
-val calculate : cpu_stats list -> memory_info -> load_average_stats -> process_count -> calculator_output
+val calculate : cpu_stats list -> memory_info -> load_average_stats -> process_count -> process_stats list -> calculator_output
 val print_calculator_output : calculator_output -> unit

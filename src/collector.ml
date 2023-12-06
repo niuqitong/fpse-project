@@ -30,6 +30,19 @@ type process_count = {
   n_running_tasks: int;
 };;
 
+
+type process_stats = {
+  pid: int;
+  utime: int;
+  stime: int;
+  total_cpu_time: int;
+  vm_rss: int;
+  state: string;
+  username: string;
+  uid: int;
+  cmdline: string;
+};;
+
 let parse_cpu_stats_line line =
   let parts = String.split_on_char ' ' line
               |> List.filter (fun s -> s <> "") in
