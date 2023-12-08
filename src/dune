@@ -13,6 +13,6 @@
 (executable
   (name monitor)
   (modules monitor)
-  (libraries core core_unix core_unix.sys_unix stdio batteries calculator collector)
+  (libraries core core_unix core_unix.sys_unix stdio batteries calculator collector lwt lwt.unix)
   (preprocess (pps ppx_jane))
   )
