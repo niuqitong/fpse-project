@@ -1,6 +1,7 @@
 # A linux system performance monitoring tool
-- [x] Realtime system running metrics monitoring
-- [ ] sort, filter processes according to their cpu/memory usage
+## Progress
+- [x] basic realtime system running metrics monitoring
+- [ ] sort, filter processes according to user's input
 - [ ] graphic display
 
 # Quick Start
