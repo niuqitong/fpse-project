@@ -1,4 +1,16 @@
 # A linux system performance monitoring tool
+- [x] Realtime system running metrics monitoring
+- [ ] sort, filter processes according to their cpu/memory usage
+- [ ] graphic display
+
+# Quick Start
+## Build
+
+## Run
+
+## Test
+
+
 # [Project Proposal](./Proposal/proposal.md)
 
 # Implementation details
