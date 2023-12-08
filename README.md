@@ -6,11 +6,17 @@
 
 # Quick Start
 ## Build
+Make sure you have the library `batteries` and `lwt` installed by running `opam install lwt` and `opam install batteries`. 
+
+Then run `dune build` to build the executable.
 
 ## Run
+After successfully building the executable, run `./_build/default/src/monitor.exe` to launch the program. The system monitor will start displaying the information in the terminal.
 
 ## Test
+Our tests.ml in the `/tests` directory contains tests of the necessary utility functions for the program. 
 
+The specifications regarding preprocessing in `dune` allow the coverage check by running `bisect-ppx-report html` in the terminal. Currently, our test has a coverage rate of more than 80%.
 
 # [Project Proposal](./Proposal/proposal.md)
 
