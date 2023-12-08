@@ -26,8 +26,8 @@ let monitor_runner () =
   |> Lwt.return
 
 let rec run_every_sec () = 
-  Lwt_unix.sleep 1.0 >>= fun () -> 
   monitor_runner () >>= fun () ->
+  Lwt_unix.sleep 1.0 >>= fun () -> 
   run_every_sec ()
 
 let () = 
