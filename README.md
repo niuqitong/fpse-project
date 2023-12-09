@@ -1,6 +1,6 @@
 # A linux system performance monitoring tool
 ## Progress
-- [x] basic realtime system running metrics monitoring
+- [x] basic realtime system running performance monitoring
 - [ ] sort, filter processes according to user's input
 - [ ] graphic display
 
@@ -16,7 +16,7 @@ After successfully building the executable, run `./_build/default/src/monitor.ex
 ## Test
 Our tests.ml in the `/tests` directory contains tests of the necessary utility functions for the program. 
 
-The specifications regarding preprocessing in `dune` allow the coverage check by running `bisect-ppx-report html` in the terminal. Currently, our test has a coverage rate of more than 80%.
+The specifications regarding preprocessing in `dune` allow the coverage check by running `bisect-ppx-report html` in the terminal.
 
 # [Project Proposal](./Proposal/proposal.md)
 
