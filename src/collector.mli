@@ -34,6 +34,7 @@ type process_stats = {
   utime: int;
   stime: int;
   total_cpu_time: int;
+  total_time: int;
   vm_rss: int;
   state: string;
   username: string;
@@ -45,3 +46,6 @@ val read_cpu_stats : unit -> cpu_stats list
 val read_memory_info : unit -> memory_info option
 val read_load_average : unit -> load_average_stats option
 val read_process_count : unit -> process_count
+val read_process_stats : int -> process_stats
+val list_pids : unit -> int list
+val collect_process_stats : unit -> process_stats list

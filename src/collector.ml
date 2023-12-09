@@ -128,6 +128,50 @@ let read_process_count () : process_count =
   in
   { total_processes; total_threads; n_running_tasks }
 
+let read_process_stats pid =
+  let stat_filename = "/proc/" ^ string_of_int pid ^ "/stat" in
+  let status_filename = "/proc/" ^ string_of_int pid ^ "/status" in
+  let stat_file = open_in stat_filename in
+  let status_file = open_in status_filename in
+  try
+  let stat_line = input_line stat_file in
+  let status_line = input_line status_file in
+  let stat_parts = String.split_on_char ' ' stat_line in
+  let status_parts = String.split_on_char '\n' status_line in
+    let utime = int_of_string (List.nth stat_parts 13) in
+    let stime = int_of_string (List.nth stat_parts 14) in
+    let total_time = utime + stime in
+    let total_cpu_time = 0 in
+    let vm_rss = int_of_string (List.nth stat_parts 23) in
+    let uid = int_of_string (List.nth stat_parts 0) in
+    let cmdline = List.nth stat_parts 1 in
+    let state = List.nth stat_parts 2 in  
+    let username = 
+      try
+        let user_entry = Unix.getpwuid uid in
+        user_entry.Unix.pw_name
+      with
+      | Not_found -> "Unknown"
+    in
+    close_in stat_file;
+    close_in status_file;
+    { pid; utime; stime; total_time; total_cpu_time; vm_rss; state; username; uid; cmdline }
+  with End_of_file ->
+    close_in stat_file;
+    close_in status_file;
+    { pid; utime = 0; stime = 0; total_cpu_time = 0; total_time = 0; vm_rss = 0; state = ""; username = ""; uid = 0; cmdline = "" } 
+
+let list_pids () =
+  Sys.readdir "/proc"
+  |> Array.to_list
+  |> List.filter_map (fun name ->
+       try Some (int_of_string name) with
+       | Failure _ -> None)
+
+let collect_process_stats () =
+  let pids = list_pids () in
+  List.map read_process_stats pids    
+
 let () =
   (* CPU Stats printing *)
   let cpu_stats_list = read_cpu_stats () in
@@ -151,4 +195,10 @@ let () =
 
   let proc_count = read_process_count () in
   Printf.printf "Total Processes: %d, Total Threads: %d, Running Tasks: %d\n"
-    proc_count.total_processes proc_count.total_threads proc_count.n_running_tasks
+    proc_count.total_processes proc_count.total_threads proc_count.n_running_tasks;
+
+  let process_stats_list = collect_process_stats () in
+  List.iter (fun ps -> 
+    Printf.printf "PID: %d, State: %s, Username: %s, UTime: %d, STime: %d, Total Time: %d, VM RSS: %d, UID: %d, CMD: %s\n"
+      ps.pid ps.state ps.username ps.utime ps.ps.stime ps.total_time ps.vm_rss ps.uid ps.cmdline
+  ) process_stats_list   
