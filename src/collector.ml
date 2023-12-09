@@ -136,9 +136,7 @@ let read_process_stats pid =
   let status_file = open_in status_filename in
   try
   let stat_line = input_line stat_file in
-  let status_line = input_line status_file in
   let stat_parts = String.split_on_char ' ' stat_line in
-  let status_parts = String.split_on_char '\n' status_line in
     let utime = int_of_string (List.nth stat_parts 13) in
     let stime = int_of_string (List.nth stat_parts 14) in
     let total_time = utime + stime in
