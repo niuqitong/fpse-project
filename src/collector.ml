@@ -36,6 +36,7 @@ type process_stats = {
   utime: int;
   stime: int;
   total_cpu_time: int;
+  total_time: int;
   vm_rss: int;
   state: string;
   username: string;
@@ -200,5 +201,5 @@ let () =
   let process_stats_list = collect_process_stats () in
   List.iter (fun ps -> 
     Printf.printf "PID: %d, State: %s, Username: %s, UTime: %d, STime: %d, Total Time: %d, VM RSS: %d, UID: %d, CMD: %s\n"
-      ps.pid ps.state ps.username ps.utime ps.ps.stime ps.total_time ps.vm_rss ps.uid ps.cmdline
+      ps.pid ps.state ps.username ps.utime ps.stime ps.total_time ps.vm_rss ps.uid ps.cmdline
   ) process_stats_list   
