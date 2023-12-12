@@ -18,6 +18,14 @@ Our tests.ml in the `/tests` directory contains tests of the necessary utility f
 
 The specifications regarding preprocessing in `dune` allow the coverage check by running `bisect-ppx-report html` in the terminal.
 
+# TODOs
+- [ ] handle user input, `monitor.ml`, call corresponding functions
+- [ ] collect system running statistics as data stream, `calculator.ml`
+- [ ] implement sort, filter functions, `calculator.ml`
+- [ ] plot stream data and display, simply print to console or use specialized library for GUI, `plot.ml` . https://github.com/sanette/bogue  
+https://github.com/sanette/oplot
+
+
 # [Project Proposal](./Proposal/proposal.md)
 
 # Implementation details
