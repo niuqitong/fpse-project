@@ -52,10 +52,6 @@ let calculate_process_list (total_mem_kb : int) (proc_ls: process_stats list) : 
   List.map proc_ls ~f:(fun proc ->
     let cpu_p= calculate_cpu_percentage proc.utime proc.stime proc.total_cpu_time in
     let mem_p = calculate_memory_percentage total_mem_kb proc.vm_rss in
-    (* need to read files to get the following 2 fields. 
-       so it's better to leave it to the collector *)
-    (* let user = get_username_from_uid proc.uid in *) 
-    (* let state = get_process_state proc.pid in *)
     {
       pid = proc.pid;
       state = proc.state;
@@ -64,8 +60,65 @@ let calculate_process_list (total_mem_kb : int) (proc_ls: process_stats list) : 
       command = proc.cmdline;
       user = proc.username;
     })
-  
 
+let compare_pid a b = compare a.pid b.pid
+let compare_user a b = String.compare a.user b.user
+let compare_state a b = String.compare a.state b.state    
+let compare_cpu a b = Float.compare a.cpu_percentage b.cpu_percentage
+let compare_mem a b = Float.compare a.mem_percentage b.mem_percentage
+
+(* 
+    user input               usage
+    order by mem         ==> order_by ~mem:true process_list
+    order by state asc   ==> order_by ~state:true ~asc:true process_list
+    order by mem asc     ==> order_by ~mem:true ~asc:true process_list
+*)
+let order_by ?(cpu=false) ?(mem=false) ?(user=false) ?(pid=false) ?(state=false) ?(asc=false) lst =
+  let comparator = match (cpu, mem, user, pid, state) with
+    | (true, _, _, _, _) -> compare_cpu
+    | (_, true, _, _, _) -> compare_mem
+    | (_, _, true, _, _) -> compare_user
+    | (_, _, _, true, _) -> compare_pid
+    | (_, _, _, _, true) -> compare_state
+    | _ -> failwith "No sorting criterion provided"
+  in
+  let sorted_list = List.sort ~compare:comparator lst in
+  match asc with 
+  | true -> sorted_list
+  | false -> List.rev sorted_list
+
+(* 
+    user input                usage
+    select cpu > 0.5     ==>  filter ~cpu_range:(0.5, 100.0) process_list
+    select mem < 10      ==>  filter ~mem_range:(0.0, 10.0) process_list
+    select user = root   ==>  filter ~user:(Some "root")
+    select state = sleep ==>  filter ~state:(Some "sleep")
+
+*)
+let filter ?cpu_range ?mem_range ?state ?user lst =
+  let cpu_check proc =
+    match cpu_range with
+    | Some (min, max) -> Float.compare proc.cpu_percentage min >= 0 && 
+                          Float.compare proc.cpu_percentage max <= 0
+    | None -> true
+  in
+  let mem_check proc =
+    match mem_range with
+    | Some (min, max) -> Float.compare proc.mem_percentage min >= 0 && 
+                          Float.compare proc.mem_percentage max <= 0
+    | None -> true
+  in
+  let state_check proc =
+    match state with
+    | Some s -> (String.compare proc.state s) = 0
+    | None -> true
+  in
+  let user_check proc =
+    match user with
+    | Some u -> (String.compare proc.user u) = 0
+    | None -> true
+  in
+  List.filter ~f:(fun proc -> cpu_check proc && mem_check proc && state_check proc && user_check proc) lst
 
 let calculate_memory_usage (info: memory_info) : (float * float) =
   let kb_to_gb kb = float_of_int kb /. 1048576.0 in
