@@ -21,9 +21,8 @@ The specifications regarding preprocessing in `dune` allow the coverage check by
 # TODOs
 - [ ] handle user input, `monitor.ml`, call corresponding functions
 - [ ] collect system running statistics as data stream, `calculator.ml`
-- [ ] implement sort, filter functions, `calculator.ml`
-- [ ] plot stream data and display, simply print to console or use specialized library for GUI, `plot.ml` . https://github.com/sanette/bogue  
-https://github.com/sanette/oplot
+- [x] implement sort, filter functions, `calculator.ml`
+- [ ] plot stream data and display, simply print to console or use specialized library for GUI, `plot.ml` . 
 
 
 # [Project Proposal](./Proposal/proposal.md)
