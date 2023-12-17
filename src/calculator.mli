@@ -29,6 +29,12 @@ type calculator_output = {
     proc_ls: process_stats_display list;
 }
 
+val order_by : ?cpu:bool -> ?mem:bool -> ?user:bool -> ?pid:bool -> ?state:bool -> ?asc:bool -> process_stats_display list -> process_stats_display list
+
+val filter :
+  ?cpu_range:(float * float) -> ?mem_range:(float * float) -> ?state:string -> ?user:string -> process_stats_display list -> process_stats_display list
+
+
 val calculate_cpu_usage : cpu_stats list -> cpu_usage_display list
 val calculate_memory_usage : memory_info -> (float * float)
 val calculate_swap_usage : memory_info -> (float * float)
