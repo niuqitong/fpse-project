@@ -85,10 +85,10 @@ end
 module Query = struct
   let compare_pid (a: process_stats_display) (b: process_stats_display) : int = 
     compare a.pid b.pid
-  let compare_user a b = String.compare a.user b.user
-  let compare_state a b = String.compare a.state b.state    
-  let compare_cpu a b = Float.compare a.cpu_percentage b.cpu_percentage
-  let compare_mem a b = Float.compare a.mem_percentage b.mem_percentage
+  let compare_user (a: process_stats_display) (b: process_stats_display) : int = String.compare a.user b.user
+  let compare_state (a: process_stats_display) (b: process_stats_display) : int = String.compare a.state b.state    
+  let compare_cpu (a: process_stats_display) (b: process_stats_display) : int = Float.compare a.cpu_percentage b.cpu_percentage
+  let compare_mem (a: process_stats_display) (b: process_stats_display) : int = Float.compare a.mem_percentage b.mem_percentage
   (* 
       user input               usage
       order by mem         ==> order_by ~mem:true process_list

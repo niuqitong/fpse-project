@@ -15,6 +15,126 @@ type process_count = P.process_count
 
 let assert_float_equal ~msg a b =
   assert_equal ~msg 1 ( Float.compare 0.01 (Float.abs (a -. b)) )
+let test_compare_pid _ =
+  let proc_a = {pid = 1; user = ""; state = ""; cpu_percentage = 0.0; mem_percentage = 0.0; command = ""} in
+  let proc_b = {pid = 2; user = ""; state = ""; cpu_percentage = 0.0; mem_percentage = 0.0; command = ""} in
+  assert_equal 0 (Query.compare_pid proc_a proc_a); 
+  assert_bool "proc_a < proc_b" (Query.compare_pid proc_a proc_b < 0); 
+  assert_bool "proc_b > proc_a" (Query.compare_pid proc_b proc_a > 0)
+
+let test_compare_user _ =
+  let proc_a = {pid = 1; user = "root"; state = ""; cpu_percentage = 0.0; mem_percentage = 0.0; command = ""} in
+  let proc_b = {pid = 2; user = "aroot"; state = ""; cpu_percentage = 0.0; mem_percentage = 0.0; command = ""} in
+  assert_equal 0 (Query.compare_user proc_a proc_a); 
+  assert_bool "proc_a < proc_b" (Query.compare_user proc_a proc_b > 0); 
+  assert_bool "proc_b > proc_a" (Query.compare_user proc_b proc_a < 0)
+  let test_compare_state _ =
+    let proc_a = {pid = 1; user = "root"; state = "S"; cpu_percentage = 0.0; mem_percentage = 0.0; command = ""} in
+    let proc_b = {pid = 2; user = "aroot"; state = "R"; cpu_percentage = 0.0; mem_percentage = 0.0; command = ""} in
+    assert_equal 0 (Query.compare_state proc_a proc_a); 
+    assert_bool "proc_a < proc_b" (Query.compare_state proc_a proc_b > 0); 
+    assert_bool "proc_b > proc_a" (Query.compare_state proc_b proc_a < 0)
+let test_compare_cpu _ =
+  let proc_a = {pid = 1; user = "root"; state = "S"; cpu_percentage = 0.1; mem_percentage = 0.0; command = ""} in
+  let proc_b = {pid = 2; user = "aroot"; state = "R"; cpu_percentage = 0.2; mem_percentage = 0.0; command = ""} in
+  assert_equal 0 (Query.compare_cpu proc_a proc_a); 
+  assert_bool "proc_a < proc_b" (Query.compare_cpu proc_a proc_b < 0); 
+  assert_bool "proc_b > proc_a" (Query.compare_cpu proc_b proc_a > 0)
+
+  let test_compare_mem _ =
+    let proc_a = {pid = 1; user = "root"; state = "S"; cpu_percentage = 0.1; mem_percentage = 0.1; command = ""} in
+    let proc_b = {pid = 2; user = "aroot"; state = "R"; cpu_percentage = 0.2; mem_percentage = 0.2; command = ""} in
+    assert_equal 0 (Query.compare_mem proc_a proc_a); 
+    assert_bool "proc_a < proc_b" (Query.compare_mem proc_a proc_b < 0); 
+    assert_bool "proc_b > proc_a" (Query.compare_mem proc_b proc_a > 0)
+
+let test_order_by _ =
+  let lst = [
+    {pid = 2; user = "user2"; state = "sleeping"; cpu_percentage = 30.0; mem_percentage = 40.0; command = "command2"};
+    {pid = 1; user = "user1"; state = "running"; cpu_percentage = 20.0; mem_percentage = 50.0; command = "command1"}
+  ] in
+  let expected_pid_asc = [
+    {pid = 1; user = "user1"; state = "running"; cpu_percentage = 20.0; mem_percentage = 50.0; command = "command1"};
+    {pid = 2; user = "user2"; state = "sleeping"; cpu_percentage = 30.0; mem_percentage = 40.0; command = "command2"}
+  ] in
+  let expected_pid_desc = List.rev expected_pid_asc in
+  assert_equal expected_pid_asc (Query.order_by ~pid:true ~asc:true lst);
+  assert_equal expected_pid_desc (Query.order_by ~pid:true lst);
+
+  let expected_cpu_asc = [
+      {pid = 1; user = "user1"; state = "running"; cpu_percentage = 20.0; mem_percentage = 50.0; command = "command1"};
+      {pid = 2; user = "user2"; state = "sleeping"; cpu_percentage = 30.0; mem_percentage = 40.0; command = "command2"}
+    ] in
+    let expected_cpu_desc = List.rev expected_cpu_asc in
+    assert_equal expected_cpu_asc (Query.order_by ~cpu:true ~asc:true lst);
+    assert_equal expected_cpu_desc (Query.order_by ~cpu:true lst);
+    
+    let expected_mem_asc = [
+      {pid = 2; user = "user2"; state = "sleeping"; cpu_percentage = 30.0; mem_percentage = 40.0; command = "command2"};
+      {pid = 1; user = "user1"; state = "running"; cpu_percentage = 20.0; mem_percentage = 50.0; command = "command1"}
+    ] in
+    let expected_mem_desc = List.rev expected_mem_asc in
+    assert_equal expected_mem_asc (Query.order_by ~mem:true ~asc:true lst);
+    assert_equal expected_mem_desc (Query.order_by ~mem:true lst);
+
+    let expected_user_asc = [
+      {pid = 1; user = "user1"; state = "running"; cpu_percentage = 20.0; mem_percentage = 50.0; command = "command1"};
+      {pid = 2; user = "user2"; state = "sleeping"; cpu_percentage = 30.0; mem_percentage = 40.0; command = "command2"}
+    ] in
+    let expected_user_desc = List.rev expected_user_asc in
+    assert_equal expected_user_asc (Query.order_by ~user:true ~asc:true lst);
+    assert_equal expected_user_desc (Query.order_by ~user:true lst);
+
+    let expected_state_asc = [
+      {pid = 1; user = "user1"; state = "running"; cpu_percentage = 20.0; mem_percentage = 50.0; command = "command1"};
+      {pid = 2; user = "user2"; state = "sleeping"; cpu_percentage = 30.0; mem_percentage = 40.0; command = "command2"}
+    ] in
+    let expected_state_desc = List.rev expected_state_asc in
+    assert_equal expected_state_asc (Query.order_by ~state:true ~asc:true lst);
+    assert_equal expected_state_desc (Query.order_by ~state:true lst);
+    assert_raises (Failure "No sorting criterion provided") (fun () -> Query.order_by lst)
+(* let test_filter _ =  *)
+let test_filter_cpu_range _ =
+    let lst = [
+      {pid = 1; user = "user1"; state = "running"; cpu_percentage = 0.6; mem_percentage = 40.0; command = "command1"};
+      {pid = 2; user = "user2"; state = "sleeping"; cpu_percentage = 0.4; mem_percentage = 60.0; command = "command2"}
+    ] in
+    let expected = [
+      {pid = 1; user = "user1"; state = "running"; cpu_percentage = 0.6; mem_percentage = 40.0; command = "command1"}
+    ] in
+    let result = Query.filter ~cpu_range:(0.5, 1.0) lst in
+    assert_equal expected result 
+
+let test_filter_mem_range _ =
+  let lst = [
+    {pid = 1; user = "user1"; state = "running"; cpu_percentage = 0.6; mem_percentage = 40.0; command = "command1"};
+    {pid = 2; user = "user2"; state = "sleeping"; cpu_percentage = 0.4; mem_percentage = 60.0; command = "command2"}
+  ] in
+  let expected = [
+    {pid = 1; user = "user1"; state = "running"; cpu_percentage = 0.6; mem_percentage = 40.0; command = "command1"}
+  ] in
+  let result = Query.filter ~mem_range:(10.0, 50.0) lst in
+  assert_equal expected result     
+let test_filter_state _ =
+  let lst = [
+    {pid = 1; user = "user1"; state = "running"; cpu_percentage = 0.6; mem_percentage = 40.0; command = "command1"};
+    {pid = 2; user = "user2"; state = "sleeping"; cpu_percentage = 0.4; mem_percentage = 60.0; command = "command2"}
+  ] in
+  let expected = [
+    {pid = 1; user = "user1"; state = "running"; cpu_percentage = 0.6; mem_percentage = 40.0; command = "command1"}
+  ] in
+  let result = Query.filter ~state: "running" lst in
+  assert_equal expected result 
+let test_filter_user _ =
+  let lst = [
+    {pid = 1; user = "user1"; state = "running"; cpu_percentage = 0.6; mem_percentage = 40.0; command = "command1"};
+    {pid = 2; user = "user2"; state = "sleeping"; cpu_percentage = 0.4; mem_percentage = 60.0; command = "command2"}
+  ] in
+  let expected = [
+    {pid = 1; user = "user1"; state = "running"; cpu_percentage = 0.6; mem_percentage = 40.0; command = "command1"}
+  ] in
+  let result = Query.filter ~user: "user1" lst in
+  assert_equal expected result 
 
 module MockCPUFileReader : CPUReader = struct
   let lines_of _ = 
@@ -227,9 +347,23 @@ let test_calculate_process_list _ =
   
     let result = Computer.calculate cpu_stats_ls mem_info load_avg_stats proc_count proc_list in
     assert_float_equal ~msg:"test all fields" result.load_avg.five_min_avg 0.75 
-  
+let query_tests =
+  "QueryTests" >::: [
+    "test_compare_pid" >:: test_compare_pid;
+    "test_compare_user" >:: test_compare_user;
+    "test_compare_state" >:: test_compare_state;
+    "test_compare_cpu" >:: test_compare_cpu;
+    "test_compare_mem" >:: test_compare_mem;
+
+    "test_order_by" >:: test_order_by;
+    "test_filter_cpu_range" >:: test_filter_cpu_range;
+    "test_filter_mem_range" >:: test_filter_mem_range;
+    "test_filter_state" >:: test_filter_state;
+    "test_filter_user" >:: test_filter_user;
     
-let suite =
+  ]  
+    
+let calculator_tests =
   "CalculatorTests" >::: [
     "test_calculate_cpu_usage" >:: test_calculate_cpu_usage;
     "test_calculate_memory_usage" >:: test_calculate_memory_usage;
@@ -252,4 +386,4 @@ let collector_tests =
 (* let () =
   run_test_tt_main ("All tests" >::: [suite; collector_tests]) *)
   let () =
-  run_test_tt_main ("All tests" >::: [ suite; collector_tests])
+  run_test_tt_main ("All tests" >::: [ query_tests; calculator_tests; collector_tests])
