@@ -3,7 +3,9 @@
   (libraries
     core
     ounit2
-    calculator
+    batteries
+    ; calculator
+    collector
   )
   (flags (:standard -w -27))
   )
