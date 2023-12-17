@@ -168,7 +168,7 @@ let print_calculator_output (output: calculator_output) =
   clear_terminal ();
   
   List.iter ~f:(fun cpu_stat ->
-    Printf.printf "%s[%s%.1f%%]  " cpu_stat.cpu_id (print_bar cpu_stat.cpu_usage_pct 20) cpu_stat.cpu_usage_pct
+    Printf.printf "%s[%s%.1f%%]\n" cpu_stat.cpu_id (print_bar cpu_stat.cpu_usage_pct 20) cpu_stat.cpu_usage_pct
   ) output.all_cpu_stats;
   Printf.printf "\n";
 
