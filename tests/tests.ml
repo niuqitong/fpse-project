@@ -3,15 +3,15 @@
 open Core
 open Batteries
 open OUnit2
-(* open Calculator *)
+open Calculator
 open Collector
 module P = Collector
-(* module C = Calculator *)
+module C = Calculator
 
-(* type cpu_stats = P.cpu_stats
+type cpu_stats = P.cpu_stats
 type memory_info = P.memory_info
 type load_average_stats = P.load_average_stats
-type process_count = P.process_count *)
+type process_count = P.process_count
 
 let assert_float_equal ~msg a b =
   assert_equal ~msg 1 ( Float.compare 0.01 (Float.abs (a -. b)) )
@@ -69,7 +69,7 @@ module MockProcCountFileReader : ProcCountFileReader = struct
 end
 module ProcessCountCollectorTest = Process_count_collector(MockProcCountFileReader)
 let test_read_process_count _ =
-  let process_count = ProcessCountCollectorTest.read_process_count in
+  let process_count = ProcessCountCollectorTest.read_process_count () in
   assert_equal 3 process_count.total_processes ~msg:"Should have 3 total processes";
   assert_equal 3 process_count.total_threads ~msg:"Should have 3 total threads";
   assert_equal 2 process_count.n_running_tasks ~msg:"Should have 2 running tasks"
@@ -124,7 +124,8 @@ let test_collect_process_stats _ =
     assert_equal "I" p2.state;
   | _ -> assert_failure "List of stats should contain exactly two elements"
 
-(* let test_calculate_cpu_usage _ =
+let test_calculate_cpu_usage _ =
+  let open Computer in
   let cpu_stats_samples = [
     {
       P.cpu_id = "cpu0";
@@ -147,20 +148,26 @@ let test_collect_process_stats _ =
       softirq = 5;
     }
   ] in
-  let expected = [
+  (* let expected = [
     { cpu_id = "cpu0"; cpu_usage_pct = 28.63 }; 
     { cpu_id = "cpu1"; cpu_usage_pct = 28.63 }  
-  ] in
+  ] in *)
   let actual = calculate_cpu_usage cpu_stats_samples in
 
-  assert_equal (List.length expected) (List.length actual) ~msg:"List length mismatch";
+  (* assert_equal (List.length expected) (List.length actual) ~msg:"List length mismatch"; *)
   
-  let compare_cpu_usage expected_cpu actual_cpu =
+  (* let compare_cpu_usage expected_cpu actual_cpu =
     Float.compare 0.01 (Float.abs (expected_cpu.cpu_usage_pct -. actual_cpu.cpu_usage_pct)) = 1
-  in
-  assert (List.for_all2_exn ~f:compare_cpu_usage expected actual) 
+  in *)
+  match actual with
+  | [c1; c2] -> 
+    assert_float_equal ~msg:"assert cpu usage" c1.cpu_usage_pct 28.63;
+    assert_float_equal ~msg:"assert cpu usage" c2.cpu_usage_pct 28.63;
+  | _ -> assert_failure "cpu usage fail"  
+  (* assert (List.for_all2_exn ~f:compare_cpu_usage expected actual)  *)
   
 let test_calculate_memory_usage _ =
+  let open Computer in
   let memory_info_sample = {
     P.mem_total = 8000000;
     mem_free = 2000000;
@@ -173,12 +180,62 @@ let test_calculate_memory_usage _ =
   assert_float_equal ~msg:"Memory usage calculation" used_memory  expected_memory;
   assert_float_equal ~msg:"Swap usage calculation" used_swap expected_swap
 
+let test_calculate_swap_usage _ =
+  let info = {mem_total = 0; mem_free = 0; swap_total = 2000000; swap_free = 500000} in
+  let expected = (1.431, 1.907) in  (* 75% swap usage *)
+  let result = Computer.calculate_swap_usage info in
 
+  let (expected_used, expected_total) = expected in
+  let (result_used, result_total) = result in
+
+  assert_float_equal ~msg:"Used swap percentage should be close to expected value" expected_used result_used;
+  assert_float_equal ~msg:"Total swap percentage should be close to expected value" expected_total result_total
+  
+let test_calculate_process_list _ =
+  let open Computer in
+  let proc_ls = [
+    {pid = 1; utime = 100; stime = 50; total_cpu_time = 1500; total_time = 150; vm_rss = 500; state = "Running"; username = "user1"; uid = 1001; cmdline = "command1"};
+    {pid = 2; utime = 200; stime = 100; total_cpu_time = 1500; total_time = 300; vm_rss = 1000; state = "Sleeping"; username = "user2"; uid = 1002; cmdline = "command2"}
+  ] in
+  let total_mem_kb = 8000 in
+  (* let expected = [
+    {pid = 1; user = "user1"; state = "Running"; cpu_percentage = 10.0; mem_percentage = 6.25; command = "command1"};
+    {pid = 2; user = "user2"; state = "Sleeping"; cpu_percentage = 20.0; mem_percentage = 12.5; command = "command2"}
+  ] in *)
+  let result = calculate_process_list total_mem_kb proc_ls in
+  match result with
+  |[p1; p2] -> 
+    assert_float_equal ~msg:"assert proc ls" p1.cpu_percentage 10.0;
+    assert_float_equal ~msg:"assert proc ls" p2.cpu_percentage 20.0;
+  | _ -> assert_failure "proc ls fail"  
+  (* assert_equal expected result ~cmp:(List.for_all2 (fun a b ->
+    a.pid = b.pid && a.user = b.user && a.state = b.state &&
+    a.cpu_percentage = b.cpu_percentage && a.mem_percentage = b.mem_percentage &&
+    a.command = b.command
+  )) *)
+
+  let test_calculate_all_fields _ =
+    let cpu_stats_ls = [
+      {cpu_id = "cpu0"; user = 100; nice = 10; system = 50; idle = 840; iowait = 0; irq = 0; softirq = 0};
+    ] in
+    let mem_info = {mem_total = 8000; mem_free = 6000; swap_total = 2000; swap_free = 1000} in
+    let load_avg_stats = {one_min_avg = 0.5; five_min_avg = 0.75; fifteen_min_avg = 1.0} in
+    let proc_count = {total_processes = 100; total_threads = 200; n_running_tasks = 50} in
+    let proc_list = [
+      {pid = 1; utime = 100; stime = 50; total_cpu_time = 1500; total_time = 150; vm_rss = 500; state = "Running"; username = "user1"; uid = 1001; cmdline = "command1"};
+    ] in
+  
+    let result = Computer.calculate cpu_stats_ls mem_info load_avg_stats proc_count proc_list in
+    assert_float_equal ~msg:"test all fields" result.load_avg.five_min_avg 0.75 
+  
+    
 let suite =
   "CalculatorTests" >::: [
     "test_calculate_cpu_usage" >:: test_calculate_cpu_usage;
     "test_calculate_memory_usage" >:: test_calculate_memory_usage;
-  ] *)
+    "test_calculate_swap_usage" >:: test_calculate_swap_usage;
+    "test_calculate_process_list" >:: test_calculate_process_list;
+  ]
 let collector_tests = 
   "collectorTests" >::: [
   "test_read_cpu_stats" >:: test_read_cpu_stats;
@@ -186,6 +243,8 @@ let collector_tests =
   "test_read_process_count." >:: test_read_process_count;
   "test_read_memory_info." >:: test_read_memory_info;
   "test_collect_process_stats." >:: test_collect_process_stats;
+  "test_calculate_all_fields." >:: test_calculate_all_fields;
+  
 
 ]  
   
@@ -193,4 +252,4 @@ let collector_tests =
 (* let () =
   run_test_tt_main ("All tests" >::: [suite; collector_tests]) *)
   let () =
-  run_test_tt_main ("All tests" >::: [ collector_tests])
+  run_test_tt_main ("All tests" >::: [ suite; collector_tests])

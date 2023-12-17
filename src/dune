@@ -4,11 +4,11 @@
   (libraries core batteries)
   (preprocess (pps ppx_jane bisect_ppx)))
 
-; (library
-;   (name calculator)
-;   (modules calculator)
-;   (libraries core collector core_unix core_unix.sys_unix)
-;   (preprocess (pps ppx_jane bisect_ppx)))
+(library
+  (name calculator)
+  (modules calculator)
+  (libraries core batteries collector core_unix core_unix.sys_unix)
+  (preprocess (pps ppx_jane bisect_ppx)))
 
 ; (executable
 ;   (name monitor)

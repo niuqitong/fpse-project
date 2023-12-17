@@ -4,7 +4,7 @@
     core
     ounit2
     batteries
-    ; calculator
+    calculator
     collector
   )
   (flags (:standard -w -27))

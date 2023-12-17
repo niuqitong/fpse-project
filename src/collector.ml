@@ -1,4 +1,43 @@
 open Batteries
+type process_count = {
+    total_processes: int;
+    total_threads: int;
+    n_running_tasks: int;
+};;
+
+type cpu_stats = {
+  cpu_id : string;
+  user : int;
+  nice : int;
+  system : int;
+  idle : int;
+  iowait : int;
+  irq : int;
+  softirq : int;
+};;
+type memory_info = {
+  mem_total: int;  
+  mem_free: int;   
+  swap_total: int; 
+  swap_free: int;  
+};;
+type process_stats = {
+  pid: int;
+  utime: int;
+  stime: int;
+  total_cpu_time: int;
+  total_time: int;
+  vm_rss: int;
+  state: string;
+  username: string;
+  uid: int;
+  cmdline: string;
+};;
+type load_average_stats = {
+  one_min_avg : float;
+  five_min_avg : float;
+  fifteen_min_avg : float;
+};;
 module type CPUReader = sig
   val lines_of : string -> string list
 end
@@ -90,12 +129,8 @@ end
 
 
 module Process_count_collector(FileReader : ProcCountFileReader) = struct
-  type process_count = {
-    total_processes: int;
-    total_threads: int;
-    n_running_tasks: int;
-  };;
-  let read_process_count : process_count =
+  
+  let read_process_count () : process_count =
     let is_digit str = String.for_all Char.is_digit str in
 
   let proc_dirs = match FileReader.read_directory "/proc" with
@@ -127,11 +162,7 @@ end
 
 module LoadAvg_collector(FileReader : LoadAvgReader) = struct
 
-  type load_average_stats = {
-    one_min_avg : float;
-    five_min_avg : float;
-    fifteen_min_avg : float;
-  };;
+  
 
   let read_load_average () : load_average_stats option =
     match FileReader.read_lvg "/proc/loadavg" with
@@ -151,12 +182,7 @@ module LoadAvg_collector(FileReader : LoadAvgReader) = struct
 end
 
 module Mem_collector(FileReader : MemReader) = struct 
-  type memory_info = {
-    mem_total: int;  
-    mem_free: int;   
-    swap_total: int; 
-    swap_free: int;  
-  };;
+  
   let read_memory_info () : memory_info option =
     let meminfo = FileReader.lines_of "/proc/meminfo" in
     let parse_line line =
@@ -183,16 +209,7 @@ module Mem_collector(FileReader : MemReader) = struct
 end
 
 module Cpu_collector (FileReader : CPUReader) = struct
-  type cpu_stats = {
-    cpu_id : string;
-    user : int;
-    nice : int;
-    system : int;
-    idle : int;
-    iowait : int;
-    irq : int;
-    softirq : int;
-  };;
+  
 
   let parse_cpu_stats_line line =
     let parts = String.split_on_char ' ' line
@@ -226,18 +243,7 @@ module Cpu_collector (FileReader : CPUReader) = struct
 end
 
 module ProcessesCollector(FileReader : ProcessesFileReader) = struct
-  type process_stats = {
-  pid: int;
-  utime: int;
-  stime: int;
-  total_cpu_time: int;
-  total_time: int;
-  vm_rss: int;
-  state: string;
-  username: string;
-  uid: int;
-  cmdline: string;
-};;
+  
 
 let read_process_stats (pid: int) : process_stats =
   let stat_filename = "/proc/" ^ string_of_int pid ^ "/stat" in
@@ -272,3 +278,9 @@ let collect_process_stats : process_stats list =
     |> List.map read_process_stats
   | None -> []
 end
+
+module RealLoadAvgCollector = LoadAvg_collector(RealLoadAvgReader)
+module RealProcCountCollector = Process_count_collector(RealProcCountReader)
+module RealMemCollector = Mem_collector(RealMemReader)
+module RealProcessesCollector = ProcessesCollector(RealProcessesReader)
+module RealCPUCollector = Cpu_collector(RealCPUReader)
