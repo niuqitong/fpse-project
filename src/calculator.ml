@@ -207,6 +207,7 @@ module Printer = struct
         proc.mem_percentage
         proc.state
         proc.command
-    )
+    );
+  Printf.printf "%!"
 end
   (* Core_unix.sleep 2; *)
