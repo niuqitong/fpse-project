@@ -201,6 +201,7 @@ let print_calculator_output (output: calculator_output) =
       proc.mem_percentage
       proc.state
       proc.command
-  )
+  );
+  Printf.printf "%!"
 
   (* Core_unix.sleep 2; *)
