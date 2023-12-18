@@ -216,7 +216,7 @@ module Cpu_collector (FileReader : CPUReader_type) = struct
     | _ -> None     [@coverage off]
 
   let read_cpu_stats () : cpu_stats list =
-    let lines = FileReader.lines_of "/proc/stat" in
+    let lines = List.tl (List.rev (FileReader.lines_of "/proc/stat") )in (* reverse and then remove the first 'cpu' that represent the overall stats *)
     List.fold_left (fun acc line ->
       if String.starts_with line "cpu" && not (String.equal line "cpu") then
         match parse_cpu_stats_line line with
@@ -224,7 +224,7 @@ module Cpu_collector (FileReader : CPUReader_type) = struct
         | None -> acc     [@coverage off]
       else acc          [@coverage off]
     ) [] lines
-  let string_of_cpu_stats stat =
+  let string_of_cpu_stats (stat : cpu_stats) : string =
     Printf.sprintf "\ncpu_id: %s, user: %d, nice: %d, system: %d, idle: %d, iowait: %d, irq: %d, softirq: %d\n" 
       stat.cpu_id stat.user stat.nice stat.system stat.idle stat.iowait stat.irq stat.softirq   [@coverage off]
 end
