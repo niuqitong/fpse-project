@@ -1,14 +1,17 @@
-[@@@warning "-33"]
-[@@@warning "-32"]
-[@@@warning "-27"]
-[@@@warning "-26"]
 
 open Core
 open Lwt.Infix
 open Calculator
 
-module P = Collector
-module C = Calculator
+module CpuCollector = Collector.RealCPUCollector
+module AvgCollector = Collector.RealLoadAvgCollector
+module ProcCountCollector = Collector.RealProcCountCollector
+module MemCollector = Collector.RealMemCollector
+module ProcessesCollector = Collector.RealProcessesCollector
+
+module Computer = Calculator.Computer
+module Printer = Calculator.Printer
+module Query = Calculator.Query
 
 type feature = No_feature | Order of string * bool | Filter_category of string * string | Filter_number of string * float * float
 type argument_error = Invalid_args | Invalid_item | Invalid_ASC | Invalid_operator | Invalid_number
@@ -18,32 +21,32 @@ let catergory_item = ["user"; "state"]
 let number_item = ["cpu"; "mem"; "pid"]
 
 let monitor_runner feature = 
-  let final_cpu_status = P.read_cpu_stats () in
+  let final_cpu_status = CpuCollector.read_cpu_stats () in
   let final_memory_info =
-    match P.read_memory_info () with
+    match MemCollector.read_memory_info () with
     | Some memory_info -> memory_info
     | None -> failwith "read_memory_info error"
   in let final_load_average = 
-    match P.read_load_average () with
+    match AvgCollector.read_load_average () with
     | Some load_average -> load_average
     | None -> failwith "read_load_average error"
-  in let raw_process_list = P.collect_process_stats ()
-  in let final_process_count = P.read_process_count () 
-  in let final_output = C.calculate final_cpu_status final_memory_info final_load_average final_process_count raw_process_list
+  in let raw_process_list = ProcessesCollector.collect_process_stats 
+  in let final_process_count = ProcCountCollector.read_process_count () 
+  in let final_output = Computer.calculate final_cpu_status final_memory_info final_load_average final_process_count raw_process_list
   in let no_feature_process_display_list = final_output.proc_ls
   in let final_process_display_list = match feature with
     | No_feature -> no_feature_process_display_list   
-    | Order ("cpu", asc) -> C.order_by ~cpu:true ~asc:asc no_feature_process_display_list
-    | Order ("user", asc) -> C.order_by ~user:true ~asc:asc no_feature_process_display_list
-    | Order ("mem", asc) -> C.order_by ~mem:true ~asc:asc no_feature_process_display_list
-    | Order ("pid", asc) -> C.order_by ~pid:true ~asc:asc no_feature_process_display_list
-    | Order ("state", asc) -> C.order_by ~state:true ~asc:asc no_feature_process_display_list
-    | Filter_category ("state", value) -> C.filter ~state:value no_feature_process_display_list
-    | Filter_category ("user", value) -> C.filter ~user:value no_feature_process_display_list
-    | Filter_number ("mem", lower_bound, upper_bound) -> C.filter ~mem_range:(lower_bound, upper_bound) no_feature_process_display_list
-    | Filter_number ("cpu", lower_bound, upper_bound) -> C.filter ~cpu_range:(lower_bound, upper_bound) no_feature_process_display_list
+    | Order ("cpu", asc) -> Query.order_by ~cpu:true ~asc:asc no_feature_process_display_list
+    | Order ("user", asc) -> Query.order_by ~user:true ~asc:asc no_feature_process_display_list
+    | Order ("mem", asc) -> Query.order_by ~mem:true ~asc:asc no_feature_process_display_list
+    | Order ("pid", asc) -> Query.order_by ~pid:true ~asc:asc no_feature_process_display_list
+    | Order ("state", asc) -> Query.order_by ~state:true ~asc:asc no_feature_process_display_list
+    | Filter_category ("state", value) -> Query.filter ~state:value no_feature_process_display_list
+    | Filter_category ("user", value) -> Query.filter ~user:value no_feature_process_display_list
+    | Filter_number ("mem", lower_bound, upper_bound) -> Query.filter ~mem_range:(lower_bound, upper_bound) no_feature_process_display_list
+    | Filter_number ("cpu", lower_bound, upper_bound) -> Query.filter ~cpu_range:(lower_bound, upper_bound) no_feature_process_display_list
     | _ -> failwith "Error in Argument"
-  in C.print_calculator_output {final_output with proc_ls = final_process_display_list}
+  in Printer.print_calculator_output {final_output with proc_ls = final_process_display_list}
   |> Lwt.return
  
 
