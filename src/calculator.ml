@@ -16,15 +16,15 @@ type cpu_usage_display = {
 type process_stats_display = {
   pid: int;
   user: string;
-  state: string;  (* e.g., "running", "sleeping", etc. *)
+  state: string; 
   cpu_percentage: float;
   mem_percentage: float;
   command: string;
 }
 type calculator_output = {
   all_cpu_stats: cpu_usage_display list;
-  memory_usage_gb: float * float; (* (Used Memory, all memory) in GB *)
-  swap_usage_gb: float * float; (* (Used swap, all Swap) in GB *)
+  memory_usage_gb: float * float; 
+  swap_usage_gb: float * float; 
   load_avg: load_average_stats;
   process_cnt: process_count;
   proc_ls: process_stats_display list;
@@ -89,12 +89,7 @@ module Query = struct
   let compare_state (a: process_stats_display) (b: process_stats_display) : int = String.compare a.state b.state    
   let compare_cpu (a: process_stats_display) (b: process_stats_display) : int = Float.compare a.cpu_percentage b.cpu_percentage
   let compare_mem (a: process_stats_display) (b: process_stats_display) : int = Float.compare a.mem_percentage b.mem_percentage
-  (* 
-      user input               usage
-      order by mem         ==> order_by ~mem:true process_list
-      order by state asc   ==> order_by ~state:true ~asc:true process_list
-      order by mem asc     ==> order_by ~mem:true ~asc:true process_list
-  *)
+
   let order_by ?(cpu=false) ?(mem=false) ?(user=false) ?(pid=false) ?(state=false) ?(asc=false) (lst: process_stats_display list) : process_stats_display list =
     let comparator = match (cpu, mem, user, pid, state) with
       | (true, _, _, _, _) -> compare_cpu
@@ -109,14 +104,7 @@ module Query = struct
     | true -> sorted_list
     | false -> List.rev sorted_list
 
-  (* 
-      user input                usage
-      select cpu > 0.5     ==>  filter ~cpu_range:(0.5, 100.0) process_list
-      select mem < 10      ==>  filter ~mem_range:(0.0, 10.0) process_list
-      select user = root   ==>  filter ~user:(Some "root")
-      select state = sleep ==>  filter ~state:(Some "sleep")
 
-  *)
   let filter ?cpu_range ?mem_range ?state ?user (lst: process_stats_display list) : process_stats_display list =
     let cpu_check proc =
       match cpu_range with
@@ -145,36 +133,22 @@ module Query = struct
 end
  
 
-                                                      
+[@@@coverage off]                                               
 module Printer = struct
-
-  (* clear the terminal so the output put stays at the current window *)
   let clear_terminal () =
-    Sys_unix.command "clear" |> ignore
+    Sys_unix.command "clear" |> ignore    
 
-  (* print some '|' to represent percentage *)
   let print_bar usage (max_bars : int) =
     let bars_count = int_of_float (usage *. float_of_int max_bars /. 100.0) in
     let bars = String.init bars_count ~f:(fun _ -> '|') in
     let spaces = String.init (max_bars - bars_count) ~f:(fun _ -> ' ') in
     bars ^ spaces  
 
-  (* 
-  output format
-
-  0[||||||||        35.2%]  1[|||||||         29.9%]  
-  2[|||||           19.7%]  3[|||             13.3%]  
-  Tasks: 749, 2635 thr, 0 kthr; 4 running    
-  Load average: 3.23 3.08 2.99  
-  Mem[|||||||||||||||||                   10.2G/16.0G] 
-  Swp[                                          0K/0K]  
-
-  *) 
-  let print_calculator_output (output: calculator_output) =
-    clear_terminal ();
-    
+  let print_calculator_output (output: calculator_output) =   
+    clear_terminal ();  
+  
     List.iter ~f:(fun cpu_stat ->
-      Printf.printf "%s[%s%.1f%%]  " cpu_stat.cpu_id (print_bar cpu_stat.cpu_usage_pct 20) cpu_stat.cpu_usage_pct
+      Printf.printf "%s[%s%.1f%%]\n" cpu_stat.cpu_id (print_bar cpu_stat.cpu_usage_pct 20) cpu_stat.cpu_usage_pct
     ) output.all_cpu_stats;
     Printf.printf "\n";
 
@@ -210,4 +184,3 @@ module Printer = struct
     );
   Printf.printf "%!"
 end
-  (* Core_unix.sleep 2; *)
