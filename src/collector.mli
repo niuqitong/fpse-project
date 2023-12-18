@@ -33,7 +33,7 @@ type process_stats = {
   (* total_cpu_time: int;
   total_time: int; *)
   starttime: int;
-  uptime: float;
+  sys_uptime: float;
   vm_rss: int;
   state: string;
   username: string;

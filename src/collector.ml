@@ -146,7 +146,7 @@ module Process_count_collector(FileReader : ProcCountFileReader_type) = struct
       let stat_file = "/proc/" ^ pid ^ "/stat" in
       let running = 
         match FileReader.read_line stat_file with
-        | Some stat -> String.get stat 0 = 'R'  
+        | Some stat -> String.get stat 2 = 'R'  
         | None -> false     [@coverage off]
       in
       (thr_acc + n_threads, run_acc + (if running then 1 else 0))
@@ -230,6 +230,14 @@ module Cpu_collector (FileReader : CPUReader_type) = struct
 end
 
 module Processes_collector(FileReader : ProcessesFileReader_type) = struct
+let system_uptime = ref 0.0 
+let read_system_uptime () =
+  match ProcessesReader.read_line "/proc/uptime" with
+  | Some line ->
+    let parts = String.split_on_char ' ' line in
+    system_uptime := float_of_string (List.hd parts)
+  | None -> ()  
+let () = read_system_uptime ()
 let read_process_stats (pid: int) : process_stats =
   let stat_filename = "/proc/" ^ string_of_int pid ^ "/stat" in
   let stat_option = FileReader.read_line stat_filename in
@@ -241,6 +249,8 @@ let read_process_stats (pid: int) : process_stats =
     let total_time = utime + stime in
     let total_cpu_time = 0 in
     let vm_rss = int_of_string (List.nth stat_parts 23) in
+    let starttime = int_of_string (List.nth stat_parts 21) in
+    let sys_uptime = !system_uptime in
     let uid = int_of_string (List.nth stat_parts 0) in
     let cmdline = List.nth stat_parts 1 in
     let state = List.nth stat_parts 2 in
@@ -249,8 +259,8 @@ let read_process_stats (pid: int) : process_stats =
       | Ok name -> name
       | Error _ -> "Unknown"
     in
-    { pid; utime; stime; total_time; total_cpu_time; vm_rss; state; username; uid; cmdline }
-  | None -> { pid; utime = 0; stime = 0; total_cpu_time = 0; total_time = 0; vm_rss = 0; state = ""; username = ""; uid = 0; cmdline = "" }   [@coverage off]
+    { pid; utime; stime; total_time; total_cpu_time; vm_rss; state; username; uid; cmdline;starttime; sys_uptime}
+  | None -> { pid; utime = 0; stime = 0; total_cpu_time = 0; total_time = 0; vm_rss = 0; state = ""; username = ""; uid = 0; cmdline = "" ;starttime = 0; sys_uptime = 0.0 }   [@coverage off]
 
 let collect_process_stats () : process_stats list =
   match FileReader.read_directory "/proc" with
