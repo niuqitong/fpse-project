@@ -12,6 +12,30 @@ Then run `dune build` to build the executable.
 
 ## Run
 After successfully building the executable, run `./_build/default/src/monitor.exe` to launch the program. The system monitor will start displaying the information in the terminal.
+```
+  
+      user input               usage
+      order by mem         ==> order_by ~mem:true process_list
+      order by state asc   ==> order_by ~state:true ~asc:true process_list
+      order by mem asc     ==> order_by ~mem:true ~asc:true process_list
+
+  
+      user input                usage
+      select cpu > 0.5     ==>  filter ~cpu_range:(0.5, 100.0) process_list
+      select mem < 10      ==>  filter ~mem_range:(0.0, 10.0) process_list
+      select user = root   ==>  filter ~user:(Some "root")
+      select state = sleep ==>  filter ~state:(Some "sleep")
+
+  output format
+
+  0[||||||||        35.2%]  1[|||||||         29.9%]  
+  2[|||||           19.7%]  3[|||             13.3%]  
+  Tasks: 749, 2635 thr, 0 kthr; 4 running    
+  Load average: 3.23 3.08 2.99  
+  Mem[|||||||||||||||||                   10.2G/16.0G] 
+  Swp[                                          0K/0K]  
+
+```
 
 ## Test
 Our tests.ml in the `/tests` directory contains tests of the necessary utility functions for the program. 
