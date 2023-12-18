@@ -233,7 +233,7 @@ end
 module ProcessesCollectorTest = Processes_collector(MockProcessesFileReader)
 
 let test_collect_process_stats _ =
-  let process_stats_list = ProcessesCollectorTest.collect_process_stats in
+  let process_stats_list = ProcessesCollectorTest.collect_process_stats () in
   assert_equal 2 (List.length process_stats_list) ~msg:"Should have 2 processes";
   match process_stats_list with
   |[p1; p2] -> 
@@ -280,18 +280,18 @@ let test_calculate_memory_usage _ =
   let memory_info_sample = {
     P.mem_total = 8000000;
     mem_free = 2000000;
-    swap_total = 4000000;
-    swap_free = 3000000;
+    swap_total = 1024 * 1024;
+    swap_free = 256 * 1024;
   } in
-  let expected_memory, expected_swap = 5.72, 0.95 in
+  let expected_memory, expected_swap = 5.72, 768.0 in
   let used_memory, _ = calculate_memory_usage memory_info_sample in
   let used_swap, _ = calculate_swap_usage memory_info_sample in
   assert_float_equal ~msg:"Memory usage calculation" used_memory  expected_memory;
   assert_float_equal ~msg:"Swap usage calculation" used_swap expected_swap
 
 let test_calculate_swap_usage _ =
-  let info = {mem_total = 0; mem_free = 0; swap_total = 2000000; swap_free = 500000} in
-  let expected = (1.431, 1.907) in  
+  let info = {mem_total = 0; mem_free = 0; swap_total = 1024 * 1024; swap_free = 512 * 1024} in
+  let expected = (512.0, 1024.0) in  
   let result = Computer.calculate_swap_usage info in
 
   let (expected_used, expected_total) = expected in

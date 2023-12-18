@@ -30,8 +30,10 @@ type process_stats = {
   pid: int;
   utime: int;
   stime: int;
-  total_cpu_time: int;
-  total_time: int;
+  (* total_cpu_time: int;
+  total_time: int; *)
+  starttime: int;
+  uptime: float;
   vm_rss: int;
   state: string;
   username: string;
@@ -87,7 +89,7 @@ end
 
 module Processes_collector(_ : ProcessesFileReader_type) : sig
   val read_process_stats : int -> process_stats 
-  val collect_process_stats : process_stats list 
+  val collect_process_stats : unit -> process_stats list 
 end
 
 
@@ -113,7 +115,7 @@ end
 
 module RealProcessesCollector : sig 
   val read_process_stats : int -> process_stats 
-  val collect_process_stats : process_stats list 
+  val collect_process_stats : unit -> process_stats list 
 end
 
 

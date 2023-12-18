@@ -28,8 +28,10 @@ type process_stats = {
   pid: int;
   utime: int;
   stime: int;
-  total_cpu_time: int;
-  total_time: int;
+  (* total_cpu_time: int;
+  total_time: int; *)
+  starttime: int;
+  sys_uptime: float;
   vm_rss: int;
   state: string;
   username: string;
@@ -47,28 +49,23 @@ module type CPUReader_type = sig
   val lines_of : string -> string list
 end
 
-
 module CPUReader : CPUReader_type = struct
   let lines_of filename = 
     List.of_enum (File.lines_of filename)   [@coverage off]
 end
 
-
 module type MemReader_type = sig
   val lines_of : string -> string Enum.t
 end
-
 
 module MemReader : MemReader_type = struct
   let lines_of filename = 
     File.lines_of filename    [@coverage off]
 end
 
-
 module type LoadAvgReader_type = sig
   val read_lvg : string -> string option
 end
-
 
 module LoadAvgReader : LoadAvgReader_type = struct
   let read_lvg filename =
@@ -82,12 +79,10 @@ module LoadAvgReader : LoadAvgReader_type = struct
     with Sys_error _ -> None                  [@coverage off]
 end
 
-
 module type ProcCountFileReader_type = sig
   val read_directory : string -> string array option
   val read_line : string -> string option
 end
-
 
 module ProcCountReader : ProcCountFileReader_type = struct
   let read_directory path =
@@ -111,7 +106,6 @@ module type ProcessesFileReader_type = sig
   val getpwuid : int -> (string, string) result
 end
 
-
 module ProcessesReader : ProcessesFileReader_type = struct
   let read_line filename =
     try
@@ -133,7 +127,6 @@ module ProcessesReader : ProcessesFileReader_type = struct
     try Ok (Unix.getpwuid uid).Unix.pw_name
     with Not_found -> Error "Unknown"
 end
-
 
 module Process_count_collector(FileReader : ProcCountFileReader_type) = struct
   let read_process_count () : process_count =
@@ -259,7 +252,7 @@ let read_process_stats (pid: int) : process_stats =
     { pid; utime; stime; total_time; total_cpu_time; vm_rss; state; username; uid; cmdline }
   | None -> { pid; utime = 0; stime = 0; total_cpu_time = 0; total_time = 0; vm_rss = 0; state = ""; username = ""; uid = 0; cmdline = "" }   [@coverage off]
 
-let collect_process_stats : process_stats list =
+let collect_process_stats () : process_stats list =
   match FileReader.read_directory "/proc" with
   | Some dirs ->
     dirs

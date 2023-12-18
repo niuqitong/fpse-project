@@ -30,7 +30,7 @@ let monitor_runner feature =
     match AvgCollector.read_load_average () with
     | Some load_average -> load_average
     | None -> failwith "read_load_average error"
-  in let raw_process_list = ProcessesCollector.collect_process_stats 
+  in let raw_process_list = ProcessesCollector.collect_process_stats ()
   in let final_process_count = ProcCountCollector.read_process_count () 
   in let final_output = Computer.calculate final_cpu_status final_memory_info final_load_average final_process_count raw_process_list
   in let no_feature_process_display_list = final_output.proc_ls
