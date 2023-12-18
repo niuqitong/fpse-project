@@ -216,7 +216,9 @@ module Cpu_collector (FileReader : CPUReader_type) = struct
     | _ -> None     [@coverage off]
 
   let read_cpu_stats () : cpu_stats list =
-    let lines = List.tl (List.rev (FileReader.lines_of "/proc/stat") )in (* reverse and then remove the first 'cpu' that represent the overall stats *)
+    (* reverse and then remove the first 'cpu' that represent the overall stats *)
+    let lines = List.rev ( List.tl (FileReader.lines_of "/proc/stat") )in 
+    (* let lines = List.rev (FileReader.lines_of "/proc/stat") in  *)
     List.fold_left (fun acc line ->
       if String.starts_with line "cpu" && not (String.equal line "cpu") then
         match parse_cpu_stats_line line with
@@ -246,8 +248,8 @@ let read_process_stats (pid: int) : process_stats =
     let stat_parts = String.split_on_char ' ' stat_line in
     let utime = int_of_string (List.nth stat_parts 13) in
     let stime = int_of_string (List.nth stat_parts 14) in
-    let total_time = utime + stime in
-    let total_cpu_time = 0 in
+    (* let total_time = utime + stime in *)
+    (* let total_cpu_time = 0 in *)
     let vm_rss = int_of_string (List.nth stat_parts 23) in
     let starttime = int_of_string (List.nth stat_parts 21) in
     let sys_uptime = !system_uptime in
@@ -259,8 +261,8 @@ let read_process_stats (pid: int) : process_stats =
       | Ok name -> name
       | Error _ -> "Unknown"
     in
-    { pid; utime; stime; total_time; total_cpu_time; vm_rss; state; username; uid; cmdline;starttime; sys_uptime}
-  | None -> { pid; utime = 0; stime = 0; total_cpu_time = 0; total_time = 0; vm_rss = 0; state = ""; username = ""; uid = 0; cmdline = "" ;starttime = 0; sys_uptime = 0.0 }   [@coverage off]
+    { pid; utime; stime; vm_rss; state; username; uid; cmdline;starttime; sys_uptime}
+  | None -> { pid; utime = 0; stime = 0; vm_rss = 0; state = ""; username = ""; uid = 0; cmdline = "" ;starttime = 0; sys_uptime = 0.0 }   [@coverage off]
 
 let collect_process_stats () : process_stats list =
   match FileReader.read_directory "/proc" with

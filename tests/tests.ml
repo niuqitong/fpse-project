@@ -303,15 +303,16 @@ let test_calculate_swap_usage _ =
 let test_calculate_process_list _ =
   let open Computer in
   let proc_ls = [
-    {pid = 1; utime = 100; stime = 50; total_cpu_time = 1500; total_time = 150; vm_rss = 500; state = "Running"; username = "user1"; uid = 1001; cmdline = "command1"};
-    {pid = 2; utime = 200; stime = 100; total_cpu_time = 1500; total_time = 300; vm_rss = 1000; state = "Sleeping"; username = "user2"; uid = 1002; cmdline = "command2"}
+    {pid = 1; utime = 10000; stime = 50; starttime = 0; sys_uptime = 100.0;  vm_rss = 500; state = "Running"; username = "user1"; uid = 1001; cmdline = "command1"};
+    (* (10000 + 500) / (100 * 1000) - 0 *)
+    {pid = 2; utime = 20000; stime = 50; starttime = 0; sys_uptime = 100.0; vm_rss = 1000; state = "Sleeping"; username = "user2"; uid = 1002; cmdline = "command2"}
   ] in
   let total_mem_kb = 8000 in
   let result = calculate_process_list total_mem_kb proc_ls in
   match result with
   |[p1; p2] -> 
-    assert_float_equal ~msg:"assert proc ls" p1.cpu_percentage 10.0;
-    assert_float_equal ~msg:"assert proc ls" p2.cpu_percentage 20.0;
+    assert_float_equal ~msg:"assert proc ls" p1.cpu_percentage 10.5;
+    assert_float_equal ~msg:"assert proc ls" p2.cpu_percentage 20.5;
   | _ -> assert_failure "proc ls fail"  
 
   let test_calculate_all_fields _ =
@@ -322,7 +323,7 @@ let test_calculate_process_list _ =
     let load_avg_stats = {one_min_avg = 0.5; five_min_avg = 0.75; fifteen_min_avg = 1.0} in
     let proc_count = {total_processes = 100; total_threads = 200; n_running_tasks = 50} in
     let proc_list = [
-      {pid = 1; utime = 100; stime = 50; total_cpu_time = 1500; total_time = 150; vm_rss = 500; state = "Running"; username = "user1"; uid = 1001; cmdline = "command1"};
+      {pid = 1; utime = 100; stime = 50; starttime = 0; sys_uptime = 100.0; vm_rss = 500; state = "Running"; username = "user1"; uid = 1001; cmdline = "command1"};
     ] in
   
     let result = Computer.calculate cpu_stats_ls mem_info load_avg_stats proc_count proc_list in
