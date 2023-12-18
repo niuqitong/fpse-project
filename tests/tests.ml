@@ -93,7 +93,7 @@ let test_order_by _ =
     assert_equal expected_state_asc (Query.order_by ~state:true ~asc:true lst);
     assert_equal expected_state_desc (Query.order_by ~state:true lst);
     assert_raises (Failure "No sorting criterion provided") (fun () -> Query.order_by lst)
-(* let test_filter _ =  *)
+
 let test_filter_cpu_range _ =
     let lst = [
       {pid = 1; user = "user1"; state = "running"; cpu_percentage = 0.6; mem_percentage = 40.0; command = "command1"};
@@ -136,7 +136,7 @@ let test_filter_user _ =
   let result = Query.filter ~user: "user1" lst in
   assert_equal expected result 
 
-module MockCPUFileReader : CPUReader = struct
+module MockCPUFileReader : CPUReader_type = struct
   let lines_of _ = 
     ["cpu0 123 456 789 0 0 0 0 0"; "cpu1 121 456 7890 0 0 0 0 0";]
 end  
@@ -144,9 +144,6 @@ module CPUCollectorTest = Cpu_collector(MockCPUFileReader)
 
 let test_read_cpu_stats _ =
   let stats = CPUCollectorTest.read_cpu_stats () in
-  (* List.iter ~f:(fun stat -> 
-    Printf.printf "Stat: %s\n" (CPUCollectorTest.string_of_cpu_stats stat)
-  ) stats; *)
   assert_equal 2 (List.length stats) ~msg:"The length of the stats list should be 2";
 
   match stats with
@@ -159,7 +156,7 @@ let test_read_cpu_stats _ =
 
   | _ -> assert_failure "List of stats should contain exactly two elements"
   
-module MockFileReader : LoadAvgReader = struct
+module MockFileReader : LoadAvgReader_type = struct
   let read_lvg _ = Some "1.00 0.75 0.50"
 end
 module LvgCollectorTest = LoadAvg_collector(MockFileReader)
@@ -171,7 +168,7 @@ let test_load_average _ =
     assert_float_equal ~msg:"5 min load avg" 0.75 v.five_min_avg
   | None -> assert_failure "List of stats should contain exactly two elements"
 
-module MockProcCountFileReader : ProcCountFileReader = struct
+module MockProcCountFileReader : ProcCountFileReader_type = struct
   let read_directory path =
     match path with
     | "/proc" -> Some [| "123"; "456"; "789"; "non-numeric" |]
@@ -194,7 +191,7 @@ let test_read_process_count _ =
   assert_equal 3 process_count.total_threads ~msg:"Should have 3 total threads";
   assert_equal 2 process_count.n_running_tasks ~msg:"Should have 2 running tasks"
 
-module MockMemReader : MemReader = struct
+module MockMemReader : MemReader_type = struct
   let lines_of _ =
     List.enum [
       "MemTotal: 8000 kB";
@@ -215,7 +212,7 @@ let test_read_memory_info _ =
     assert_equal 1000 mem_info.swap_free ~msg:"SwapFree should be 1000";
   | None -> assert_failure "Expected Some memory_info, got None"
 
-module MockProcessesFileReader : ProcessesFileReader = struct
+module MockProcessesFileReader : ProcessesFileReader_type = struct
   let read_directory path =
     match path with
     | "/proc" -> Some [| "123"; "456" |] 
@@ -233,7 +230,7 @@ module MockProcessesFileReader : ProcessesFileReader = struct
     | _ -> Error "Unknown"
 end
 
-module ProcessesCollectorTest = ProcessesCollector(MockProcessesFileReader)
+module ProcessesCollectorTest = Processes_collector(MockProcessesFileReader)
 
 let test_collect_process_stats _ =
   let process_stats_list = ProcessesCollectorTest.collect_process_stats in
@@ -268,23 +265,15 @@ let test_calculate_cpu_usage _ =
       softirq = 5;
     }
   ] in
-  (* let expected = [
-    { cpu_id = "cpu0"; cpu_usage_pct = 28.63 }; 
-    { cpu_id = "cpu1"; cpu_usage_pct = 28.63 }  
-  ] in *)
+
   let actual = calculate_cpu_usage cpu_stats_samples in
 
-  (* assert_equal (List.length expected) (List.length actual) ~msg:"List length mismatch"; *)
-  
-  (* let compare_cpu_usage expected_cpu actual_cpu =
-    Float.compare 0.01 (Float.abs (expected_cpu.cpu_usage_pct -. actual_cpu.cpu_usage_pct)) = 1
-  in *)
   match actual with
   | [c1; c2] -> 
     assert_float_equal ~msg:"assert cpu usage" c1.cpu_usage_pct 28.63;
     assert_float_equal ~msg:"assert cpu usage" c2.cpu_usage_pct 28.63;
   | _ -> assert_failure "cpu usage fail"  
-  (* assert (List.for_all2_exn ~f:compare_cpu_usage expected actual)  *)
+
   
 let test_calculate_memory_usage _ =
   let open Computer in
@@ -302,7 +291,7 @@ let test_calculate_memory_usage _ =
 
 let test_calculate_swap_usage _ =
   let info = {mem_total = 0; mem_free = 0; swap_total = 2000000; swap_free = 500000} in
-  let expected = (1.431, 1.907) in  (* 75% swap usage *)
+  let expected = (1.431, 1.907) in  
   let result = Computer.calculate_swap_usage info in
 
   let (expected_used, expected_total) = expected in
@@ -318,21 +307,12 @@ let test_calculate_process_list _ =
     {pid = 2; utime = 200; stime = 100; total_cpu_time = 1500; total_time = 300; vm_rss = 1000; state = "Sleeping"; username = "user2"; uid = 1002; cmdline = "command2"}
   ] in
   let total_mem_kb = 8000 in
-  (* let expected = [
-    {pid = 1; user = "user1"; state = "Running"; cpu_percentage = 10.0; mem_percentage = 6.25; command = "command1"};
-    {pid = 2; user = "user2"; state = "Sleeping"; cpu_percentage = 20.0; mem_percentage = 12.5; command = "command2"}
-  ] in *)
   let result = calculate_process_list total_mem_kb proc_ls in
   match result with
   |[p1; p2] -> 
     assert_float_equal ~msg:"assert proc ls" p1.cpu_percentage 10.0;
     assert_float_equal ~msg:"assert proc ls" p2.cpu_percentage 20.0;
   | _ -> assert_failure "proc ls fail"  
-  (* assert_equal expected result ~cmp:(List.for_all2 (fun a b ->
-    a.pid = b.pid && a.user = b.user && a.state = b.state &&
-    a.cpu_percentage = b.cpu_percentage && a.mem_percentage = b.mem_percentage &&
-    a.command = b.command
-  )) *)
 
   let test_calculate_all_fields _ =
     let cpu_stats_ls = [
@@ -383,7 +363,5 @@ let collector_tests =
 ]  
   
 
-(* let () =
-  run_test_tt_main ("All tests" >::: [suite; collector_tests]) *)
   let () =
   run_test_tt_main ("All tests" >::: [ query_tests; calculator_tests; collector_tests])
