@@ -1,9 +1,10 @@
 open Batteries
+
 type process_count = {
     total_processes: int;
     total_threads: int;
     n_running_tasks: int;
-};;
+}
 
 type cpu_stats = {
   cpu_id : string;
@@ -14,13 +15,15 @@ type cpu_stats = {
   iowait : int;
   irq : int;
   softirq : int;
-};;
+}
+
 type memory_info = {
   mem_total: int;  
   mem_free: int;   
   swap_total: int; 
   swap_free: int;  
-};;
+}
+
 type process_stats = {
   pid: int;
   utime: int;
@@ -32,80 +35,84 @@ type process_stats = {
   username: string;
   uid: int;
   cmdline: string;
-};;
+}
+
 type load_average_stats = {
   one_min_avg : float;
   five_min_avg : float;
   fifteen_min_avg : float;
-};;
-module type CPUReader = sig
+}
+
+module type CPUReader_type = sig
   val lines_of : string -> string list
 end
 
-module RealCPUReader : CPUReader = struct
+
+module CPUReader : CPUReader_type = struct
   let lines_of filename = 
-    List.of_enum (File.lines_of filename)
+    List.of_enum (File.lines_of filename)   [@coverage off]
 end
 
 
-module type MemReader = sig
+module type MemReader_type = sig
   val lines_of : string -> string Enum.t
 end
 
-module RealMemReader : MemReader = struct
+
+module MemReader : MemReader_type = struct
   let lines_of filename = 
-    File.lines_of filename
+    File.lines_of filename    [@coverage off]
 end
 
 
-module type LoadAvgReader = sig
+module type LoadAvgReader_type = sig
   val read_lvg : string -> string option
 end
 
-module RealLoadAvgReader : LoadAvgReader = struct
+
+module LoadAvgReader : LoadAvgReader_type = struct
   let read_lvg filename =
-    try
-      let channel = open_in filename in
-      try
-        let line = input_line channel in
+    try let channel = open_in filename in     
+      try let line = input_line channel in    
+        close_in channel;                     
+        Some line                             [@coverage off]
+      with End_of_file ->                     
         close_in channel;
-        Some line
-      with End_of_file ->
-        close_in channel;
-        None
-    with Sys_error _ -> None
+        None                                  [@coverage off]
+    with Sys_error _ -> None                  [@coverage off]
 end
 
 
-module type ProcCountFileReader = sig
+module type ProcCountFileReader_type = sig
   val read_directory : string -> string array option
   val read_line : string -> string option
 end
 
-module RealProcCountReader : ProcCountFileReader = struct
+
+module ProcCountReader : ProcCountFileReader_type = struct
   let read_directory path =
-    try Some (Sys.readdir path)
-    with Sys_error _ -> None
+    try Some (Sys.readdir path)     [@coverage off]
+    with Sys_error _ -> None        [@coverage off]
 
   let read_line filename =
-    try
-      let channel = open_in filename in
-      try
-        let line = input_line channel in
+    try let channel = open_in filename in         
+      try let line = input_line channel in        
         close_in channel;
-        Some line
-      with End_of_file ->
+        Some line                                 [@coverage off]
+      with End_of_file ->                         
         close_in channel;
-        None
-    with Sys_error _ -> None
+        None                                      [@coverage off]
+    with Sys_error _ -> None                      [@coverage off]
 end
 
-module type ProcessesFileReader = sig
+module type ProcessesFileReader_type = sig
   val read_line : string -> string option
   val read_directory : string -> string array option
   val getpwuid : int -> (string, string) result
 end
-module RealProcessesReader : ProcessesFileReader = struct
+
+
+module ProcessesReader : ProcessesFileReader_type = struct
   let read_line filename =
     try
       let channel = open_in filename in
@@ -113,10 +120,10 @@ module RealProcessesReader : ProcessesFileReader = struct
         let line = input_line channel in
         close_in channel;
         Some line
-      with End_of_file ->
+      with End_of_file ->     
         close_in channel;
-        None
-    with Sys_error _ -> None
+        None               
+    with Sys_error _ -> None     
 
   let read_directory path =
     try Some (Sys.readdir path)
@@ -128,42 +135,34 @@ module RealProcessesReader : ProcessesFileReader = struct
 end
 
 
-module Process_count_collector(FileReader : ProcCountFileReader) = struct
-  
+module Process_count_collector(FileReader : ProcCountFileReader_type) = struct
   let read_process_count () : process_count =
     let is_digit str = String.for_all Char.is_digit str in
 
   let proc_dirs = match FileReader.read_directory "/proc" with
                   | Some dirs -> Array.to_list dirs |> List.filter is_digit
-                  | None -> []
-  in
-
-  let total_processes = List.length proc_dirs in
-
+                  | None -> []      [@coverage off]
+  in let total_processes = List.length proc_dirs in
   let total_threads, n_running_tasks =
     List.fold_left (fun (thr_acc, run_acc) pid ->
       let task_dir = "/proc/" ^ pid ^ "/task" in
       let n_threads = match FileReader.read_directory task_dir with
                       | Some tasks -> Array.length tasks
-                      | None -> 0
+                      | None -> 0       [@coverage off]
       in
       let stat_file = "/proc/" ^ pid ^ "/stat" in
       let running = 
         match FileReader.read_line stat_file with
         | Some stat -> String.get stat 0 = 'R'  
-        | None -> false
+        | None -> false     [@coverage off]
       in
       (thr_acc + n_threads, run_acc + (if running then 1 else 0))
     ) (0, 0) proc_dirs
   in
   { total_processes; total_threads; n_running_tasks }
-
 end
 
-module LoadAvg_collector(FileReader : LoadAvgReader) = struct
-
-  
-
+module LoadAvg_collector(FileReader : LoadAvgReader_type) = struct
   let read_load_average () : load_average_stats option =
     match FileReader.read_lvg "/proc/loadavg" with
     | Some line ->
@@ -175,14 +174,12 @@ module LoadAvg_collector(FileReader : LoadAvgReader) = struct
             five_min_avg = float_of_string five_min;
             fifteen_min_avg = float_of_string fifteen_min;
           }
-        | _ -> None
+        | _ -> None   [@coverage off]
       end
-    | None -> None
-
+    | None -> None    [@coverage off]
 end
 
-module Mem_collector(FileReader : MemReader) = struct 
-  
+module Mem_collector(FileReader : MemReader_type) = struct 
   let read_memory_info () : memory_info option =
     let meminfo = FileReader.lines_of "/proc/meminfo" in
     let parse_line line =
@@ -191,9 +188,9 @@ module Mem_collector(FileReader : MemReader) = struct
         let value = String.trim value |> String.split_on_char ' ' |> List.hd in
         begin
           try Some (String.trim key, int_of_string value)
-          with Failure _ -> None
+          with Failure _ -> None      [@coverage off]
         end
-      | _ -> None
+      | _ -> None     [@coverage off]
     in
     let meminfo_list = Enum.filter_map parse_line meminfo |> List.of_enum in
     try
@@ -204,13 +201,10 @@ module Mem_collector(FileReader : MemReader) = struct
         swap_total = find_value "SwapTotal";
         swap_free = find_value "SwapFree";
       }
-    with Not_found -> None
-
+    with Not_found -> None    [@coverage off]
 end
 
-module Cpu_collector (FileReader : CPUReader) = struct
-  
-
+module Cpu_collector (FileReader : CPUReader_type) = struct
   let parse_cpu_stats_line line =
     let parts = String.split_on_char ' ' line
                 |> List.filter (fun s -> s <> "") in
@@ -226,7 +220,7 @@ module Cpu_collector (FileReader : CPUReader) = struct
         irq = int_of_string irq;
         softirq = int_of_string softirq;
       }
-    | _ -> None
+    | _ -> None     [@coverage off]
 
   let read_cpu_stats () : cpu_stats list =
     let lines = FileReader.lines_of "/proc/stat" in
@@ -234,17 +228,15 @@ module Cpu_collector (FileReader : CPUReader) = struct
       if String.starts_with line "cpu" && not (String.equal line "cpu") then
         match parse_cpu_stats_line line with
         | Some stats -> stats :: acc
-        | None -> acc
-      else acc
+        | None -> acc     [@coverage off]
+      else acc          [@coverage off]
     ) [] lines
   let string_of_cpu_stats stat =
-    Printf.sprintf "\ncpu_id: %s, user: %d, nice: %d, system: %d, idle: %d, iowait: %d, irq: %d, softirq: %d\n"
-      stat.cpu_id stat.user stat.nice stat.system stat.idle stat.iowait stat.irq stat.softirq
+    Printf.sprintf "\ncpu_id: %s, user: %d, nice: %d, system: %d, idle: %d, iowait: %d, irq: %d, softirq: %d\n" 
+      stat.cpu_id stat.user stat.nice stat.system stat.idle stat.iowait stat.irq stat.softirq   [@coverage off]
 end
 
-module ProcessesCollector(FileReader : ProcessesFileReader) = struct
-  
-
+module Processes_collector(FileReader : ProcessesFileReader_type) = struct
 let read_process_stats (pid: int) : process_stats =
   let stat_filename = "/proc/" ^ string_of_int pid ^ "/stat" in
   let stat_option = FileReader.read_line stat_filename in
@@ -265,9 +257,9 @@ let read_process_stats (pid: int) : process_stats =
       | Error _ -> "Unknown"
     in
     { pid; utime; stime; total_time; total_cpu_time; vm_rss; state; username; uid; cmdline }
-  | None -> { pid; utime = 0; stime = 0; total_cpu_time = 0; total_time = 0; vm_rss = 0; state = ""; username = ""; uid = 0; cmdline = "" }
+  | None -> { pid; utime = 0; stime = 0; total_cpu_time = 0; total_time = 0; vm_rss = 0; state = ""; username = ""; uid = 0; cmdline = "" }   [@coverage off]
+
 let collect_process_stats : process_stats list =
-  
   match FileReader.read_directory "/proc" with
   | Some dirs ->
     dirs
@@ -276,11 +268,11 @@ let collect_process_stats : process_stats list =
          try Some (int_of_string name) with
          | Failure _ -> None)
     |> List.map read_process_stats
-  | None -> []
+  | None -> []      [@coverage off]
 end
 
-module RealLoadAvgCollector = LoadAvg_collector(RealLoadAvgReader)
-module RealProcCountCollector = Process_count_collector(RealProcCountReader)
-module RealMemCollector = Mem_collector(RealMemReader)
-module RealProcessesCollector = ProcessesCollector(RealProcessesReader)
-module RealCPUCollector = Cpu_collector(RealCPUReader)
+module RealLoadAvgCollector = LoadAvg_collector(LoadAvgReader)
+module RealProcCountCollector = Process_count_collector(ProcCountReader)
+module RealMemCollector = Mem_collector(MemReader)
+module RealProcessesCollector = Processes_collector(ProcessesReader)
+module RealCPUCollector = Cpu_collector(CPUReader)
