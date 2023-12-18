@@ -146,7 +146,7 @@ module Process_count_collector(FileReader : ProcCountFileReader_type) = struct
       let stat_file = "/proc/" ^ pid ^ "/stat" in
       let running = 
         match FileReader.read_line stat_file with
-        | Some stat -> String.get stat 0 = 'R'  
+        | Some stat -> String.get stat 2 = 'R'  
         | None -> false     [@coverage off]
       in
       (thr_acc + n_threads, run_acc + (if running then 1 else 0))
