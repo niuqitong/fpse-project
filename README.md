@@ -1,4 +1,4 @@
-# FPSE Final Project: A Linux system performance monitoring tool
+# FPSE Final Project: A Linux System Performance Monitoring Tool
 Welcome to our Linux system performance monitoring tool written in OCaml! This tool provides a comprehensive set of features to monitor and analyze various aspects of your Linux system, allowing you to gain insights into its performance.
 
 # Features
