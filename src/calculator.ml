@@ -141,6 +141,14 @@ end
 
 [@@@coverage off]                                               
 module Printer = struct
+  let ansi_fg_yellow = "\027[33m"  
+  let ansi_fg_blue = "\027[34m"   
+  let ansi_reset = "\027[0m"      
+  let ansi_bg_green = "\027[42m"
+  let ansi_fg_light_blue = "\027[94m" 
+  let ansi_fg_light_green = "\027[92m"
+  let ansi_fg_very_light_blue = "\027[38;5;117m" 
+
   let clear_terminal () =
     Sys_unix.command "clear" |> ignore    
 
@@ -154,28 +162,37 @@ module Printer = struct
     clear_terminal ();  
   
     List.iter ~f:(fun cpu_stat ->
-      Printf.printf "%s[%s%.4f%%]\n" cpu_stat.cpu_id (print_bar cpu_stat.cpu_usage_pct 20) cpu_stat.cpu_usage_pct
+      Printf.printf "%s%s%s[%s%.4f%%]\n" ansi_fg_very_light_blue cpu_stat.cpu_id ansi_reset (print_bar cpu_stat.cpu_usage_pct 20) cpu_stat.cpu_usage_pct
     ) output.all_cpu_stats;
     Printf.printf "\n";
 
-    Printf.printf "Tasks: %d, %d thr, %d kthr; %d running\n"
-      output.process_cnt.total_processes 
-      output.process_cnt.total_threads
-      0 
-      output.process_cnt.n_running_tasks;
+    Printf.printf "%sTasks: %d%s, %s%d thr, %d kthr%s; %s%d running\n%s"
+      ansi_fg_light_blue output.process_cnt.total_processes ansi_reset
+      ansi_fg_light_green output.process_cnt.total_threads
+      0 ansi_reset
+      ansi_fg_light_blue output.process_cnt.n_running_tasks ansi_reset;
 
-    Printf.printf "Load average: %.2f %.2f %.2f\n"
-      output.load_avg.one_min_avg output.load_avg.five_min_avg output.load_avg.fifteen_min_avg;
+    Printf.printf "%sLoad average: %.2f %.2f %.2f\n%s"
+      ansi_fg_yellow output.load_avg.one_min_avg output.load_avg.five_min_avg output.load_avg.fifteen_min_avg ansi_reset;
 
     let (used_memory_gb, total_memory_gb) = output.memory_usage_gb in
     let memory_usage_pct = used_memory_gb /. total_memory_gb *. 100.0 in
-    Printf.printf "Mem[%s%.2fG/%.2fG] \n" (print_bar memory_usage_pct 40) used_memory_gb total_memory_gb;
+    Printf.printf "%sMem%s[%s%.2fG/%.2fG%s] \n" 
+      ansi_fg_very_light_blue ansi_reset (ansi_fg_yellow ^ (print_bar memory_usage_pct 40) ^ ansi_reset) 
+      used_memory_gb
+      total_memory_gb
+      ansi_reset;
+
 
     let (used_swap_gb, total_swap_gb) = output.swap_usage_gb in
     let swap_usage_pct = used_swap_gb /. total_swap_gb *. 100.0 in
-    Printf.printf "Swp[%s%.2fM/%.2fM] \n" (print_bar swap_usage_pct 40) used_swap_gb total_swap_gb;
+    Printf.printf "%sSwp%s[%s%.2fM/%.2fM%s] \n"     
+      ansi_fg_very_light_blue ansi_reset (ansi_fg_yellow ^ (print_bar swap_usage_pct 40) ^ ansi_reset)
+      used_swap_gb
+      total_swap_gb
+      ansi_reset;
 
-    Printf.printf "\n%6s %10s %4s %4s %7s %s\n" "PID" "USER" "CPU%" "MEM%" "STATE" "COMMAND";
+    Printf.printf "\n%s%5s %10s %4s %4s %7s %s%s\n" ansi_bg_green "PID" "USER" "CPU%" "MEM%" "STATE" "COMMAND" ansi_reset;
     
     (* let first_ten_procs = List.take output.proc_ls 100 in *)
 
