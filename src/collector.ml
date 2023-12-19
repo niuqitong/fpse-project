@@ -146,7 +146,9 @@ module Process_count_collector(FileReader : ProcCountFileReader_type) = struct
       let stat_file = "/proc/" ^ pid ^ "/stat" in
       let running = 
         match FileReader.read_line stat_file with
-        | Some stat -> String.get stat 2 = 'R'  
+        | Some stat -> 
+            let stat_parts = String.split_on_char ' ' stat in
+            (try List.nth stat_parts 2 = "R" with _ -> false)
         | None -> false     [@coverage off]
       in
       (thr_acc + n_threads, run_acc + (if running then 1 else 0))
@@ -232,17 +234,17 @@ module Cpu_collector (FileReader : CPUReader_type) = struct
 end
 
 module Processes_collector(FileReader : ProcessesFileReader_type) = struct
-let system_uptime = ref 0.0 
-let read_system_uptime () =
-  match ProcessesReader.read_line "/proc/uptime" with
-  | Some line ->
-    let parts = String.split_on_char ' ' line in
-    system_uptime := float_of_string (List.hd parts)
-  | None -> ()  
-let () = read_system_uptime ()
 let read_process_stats (pid: int) : process_stats =
   let stat_filename = "/proc/" ^ string_of_int pid ^ "/stat" in
   let stat_option = FileReader.read_line stat_filename in
+  let system_uptime = ref 0.0 in
+  let read_system_uptime () =
+    match ProcessesReader.read_line "/proc/uptime" with
+    | Some line ->
+      let parts = String.split_on_char ' ' line in
+      system_uptime := float_of_string (List.hd parts)
+    | None -> ()  in
+  let () = read_system_uptime () in
   match stat_option with
   | Some stat_line ->
     let stat_parts = String.split_on_char ' ' stat_line in
@@ -253,7 +255,7 @@ let read_process_stats (pid: int) : process_stats =
     let vm_rss = int_of_string (List.nth stat_parts 23) in
     let starttime = int_of_string (List.nth stat_parts 21) in
     let sys_uptime = !system_uptime in
-    let uid = int_of_string (List.nth stat_parts 0) in
+    let uid = int_of_string (List.nth stat_parts 18) in
     let cmdline = List.nth stat_parts 1 in
     let state = List.nth stat_parts 2 in
     let username = 
