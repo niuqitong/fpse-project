@@ -14,7 +14,7 @@ Make sure you have the library `batteries` and `lwt` installed by running `opam 
 Then run `dune build` to build the executable.
 
 ## Run
-After building the executable successfully, run ./_build/default/src/monitor.exe to launch the program. The homepage gives clear instructions on valid user commands, triggering the monitor based on your specifications.
+After building the executable successfully, run `./_build/default/src/monitor.exe` to launch the program. The homepage gives clear instructions on valid user commands, triggering the monitor based on your specifications.
 
 Here, you'll witness the tool capturing, calculating, and printing the required system information every second. Pressing enter smoothly takes you back to the homepage, ready for you to explore additional features.
 
