@@ -66,6 +66,7 @@ end
 
 module type ProcessesFileReader_type = sig
   val read_line : string -> string option
+  val lines_of : string -> string list
   val read_directory : string -> string array option
   val getpwuid : int -> (string, string) result
 end

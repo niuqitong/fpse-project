@@ -15,6 +15,7 @@ type process_count = P.process_count
 
 let assert_float_equal ~msg a b =
   assert_equal ~msg 1 ( Float.compare 0.01 (Float.abs (a -. b)) )
+ 
 let test_compare_pid _ =
   let proc_a = {pid = 1; user = ""; state = ""; cpu_percentage = 0.0; mem_percentage = 0.0; command = ""} in
   let proc_b = {pid = 2; user = ""; state = ""; cpu_percentage = 0.0; mem_percentage = 0.0; command = ""} in
@@ -138,7 +139,7 @@ let test_filter_user _ =
 
 module MockCPUFileReader : CPUReader_type = struct
   let lines_of _ = 
-    ["cpu0 123 456 789 0 0 0 0 0"; "cpu1 121 456 7890 0 0 0 0 0";]
+    [ "cpu 123 456 789 0 0 0 0 0"; "cpu1 121 456 7890 0 0 0 0 0"; "cpu0 123 456 789 0 0 0 0 0"; ]
 end  
 module CPUCollectorTest = Cpu_collector(MockCPUFileReader)
 
@@ -179,9 +180,9 @@ module MockProcCountFileReader : ProcCountFileReader_type = struct
 
   let read_line path =
     match path with
-    | "/proc/123/stat" -> Some "R ..."
-    | "/proc/456/stat" -> Some "S ..."
-    | "/proc/789/stat" -> Some "R ..."
+    | "/proc/123/stat" -> Some "xx yy R ..."
+    | "/proc/456/stat" -> Some "xx yy S ..."
+    | "/proc/789/stat" -> Some "xx yy R ..."
     | _ -> None
 end
 module ProcessCountCollectorTest = Process_count_collector(MockProcCountFileReader)
@@ -217,7 +218,11 @@ module MockProcessesFileReader : ProcessesFileReader_type = struct
     match path with
     | "/proc" -> Some [| "123"; "456" |] 
     | _ -> None
-
+  let lines_of path = 
+    match path with
+    | "/proc/123/status" ->  [ "123"; "123";"123";"123";"123";"123";"123";"123";"Uid: 1000";"123"; "456" ] 
+    | "/proc/456/status" ->  [ "456"; "123";"123";"123";"123";"123";"123";"123";"Uid: 1000";"123"; "456" ] 
+    | _ -> [ ]
   let read_line path =
     match path with
     | "/proc/123/stat" -> Some "17 (cpuhp/0) S 2 0 0 0 -1 69238848 0 0 0 0 0 0 0 0 20 0 1 0 0 0 0 18446744073709551615 0 0 0 0 0 0 0 2147483647 0 0 0 0 17 0 0 0 0 0 0 0 0 0 0 0 0 0 0"  
@@ -303,9 +308,9 @@ let test_calculate_swap_usage _ =
 let test_calculate_process_list _ =
   let open Computer in
   let proc_ls = [
-    {pid = 1; utime = 10000; stime = 50; starttime = 0; sys_uptime = 100.0;  vm_rss = 500; state = "Running"; username = "user1"; uid = 1001; cmdline = "command1"};
+    {pid = 1; utime = 10000; stime = 500; starttime = 0; sys_uptime = 1000.0;  vm_rss = 500; state = "Running"; username = "user1"; uid = 1001; cmdline = "command1"};
     (* (10000 + 500) / (100 * 1000) - 0 *)
-    {pid = 2; utime = 20000; stime = 50; starttime = 0; sys_uptime = 100.0; vm_rss = 1000; state = "Sleeping"; username = "user2"; uid = 1002; cmdline = "command2"}
+    {pid = 2; utime = 20000; stime = 500; starttime = 0; sys_uptime = 1000.0; vm_rss = 1000; state = "Sleeping"; username = "user2"; uid = 1002; cmdline = "command2"}
   ] in
   let total_mem_kb = 8000 in
   let result = calculate_process_list total_mem_kb proc_ls in
@@ -328,6 +333,7 @@ let test_calculate_process_list _ =
   
     let result = Computer.calculate cpu_stats_ls mem_info load_avg_stats proc_count proc_list in
     assert_float_equal ~msg:"test all fields" result.load_avg.five_min_avg 0.75 
+
 let query_tests =
   "QueryTests" >::: [
     "test_compare_pid" >:: test_compare_pid;

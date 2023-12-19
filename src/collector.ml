@@ -102,6 +102,7 @@ end
 
 module type ProcessesFileReader_type = sig
   val read_line : string -> string option
+  val lines_of : string -> string list
   val read_directory : string -> string array option
   val getpwuid : int -> (string, string) result
 end
@@ -118,6 +119,8 @@ module ProcessesReader : ProcessesFileReader_type = struct
         close_in channel;
         None               
     with Sys_error _ -> None     
+  let lines_of filename = 
+    List.of_enum (File.lines_of filename)
 
   let read_directory path =
     try Some (Sys.readdir path)
@@ -220,7 +223,6 @@ module Cpu_collector (FileReader : CPUReader_type) = struct
   let read_cpu_stats () : cpu_stats list =
     (* reverse and then remove the first 'cpu' that represent the overall stats *)
     let lines = List.rev ( List.tl (FileReader.lines_of "/proc/stat") )in 
-    (* let lines = List.rev (FileReader.lines_of "/proc/stat") in  *)
     List.fold_left (fun acc line ->
       if String.starts_with line "cpu" && not (String.equal line "cpu") then
         match parse_cpu_stats_line line with
@@ -236,26 +238,32 @@ end
 module Processes_collector(FileReader : ProcessesFileReader_type) = struct
 let read_process_stats (pid: int) : process_stats =
   let stat_filename = "/proc/" ^ string_of_int pid ^ "/stat" in
+  let status_filename = "/proc/" ^ string_of_int pid ^ "/status" in
   let stat_option = FileReader.read_line stat_filename in
-  let system_uptime = ref 0.0 in
+  let proc_status = FileReader.lines_of status_filename in
+  let starts_with_uid line =
+    String.length line >= 3 && String.sub line 0 3 = "Uid"
+  in
+  let extract_first_number line =
+    Scanf.sscanf line "Uid: %d" (fun n -> n)
+  in
+  let line =  List.find starts_with_uid proc_status in
+  let raw_uid =  extract_first_number line in
   let read_system_uptime () =
-    match ProcessesReader.read_line "/proc/uptime" with
+    match FileReader.read_line "/proc/uptime" with
     | Some line ->
       let parts = String.split_on_char ' ' line in
-      system_uptime := float_of_string (List.hd parts)
-    | None -> ()  in
-  let () = read_system_uptime () in
+      float_of_string (List.hd parts)
+    | None -> 0.0  in
   match stat_option with
   | Some stat_line ->
     let stat_parts = String.split_on_char ' ' stat_line in
     let utime = int_of_string (List.nth stat_parts 13) in
     let stime = int_of_string (List.nth stat_parts 14) in
-    (* let total_time = utime + stime in *)
-    (* let total_cpu_time = 0 in *)
     let vm_rss = int_of_string (List.nth stat_parts 23) in
     let starttime = int_of_string (List.nth stat_parts 21) in
-    let sys_uptime = !system_uptime in
-    let uid = int_of_string (List.nth stat_parts 18) in
+    let sys_uptime = read_system_uptime () in
+    let uid = raw_uid in
     let cmdline = List.nth stat_parts 1 in
     let state = List.nth stat_parts 2 in
     let username = 

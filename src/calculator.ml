@@ -20,6 +20,8 @@ type process_stats_display = {
   cpu_percentage: float;
   mem_percentage: float;
   command: string;
+  (* starttime: int;
+  sys_uptime: float; *)
 }
 type calculator_output = {
   all_cpu_stats: cpu_usage_display list;
@@ -35,7 +37,7 @@ module Computer = struct
       let total_time = stats.user + stats.nice + stats.system + stats.idle +
                       stats.iowait + stats.irq + stats.softirq in
       let non_idle_time = total_time - stats.idle in
-      let cpu_usage_pct = 100.0 *. float_of_int non_idle_time /. float_of_int total_time in
+      let cpu_usage_pct = (100.0 *. float_of_int non_idle_time) /. float_of_int total_time in
 
       { cpu_id = stats.cpu_id; cpu_usage_pct }
     ) stats_list
@@ -43,20 +45,19 @@ module Computer = struct
   (* let calculate_cpu_percentage utime stime total_cpu_time =
     let total_time = float_of_int (utime + stime) in
     (total_time /. float_of_int total_cpu_time) *. 100.0 *)
-  let calculate_cpu_percentage (utime: int) (stime: int) (start_time: int) (sys_uptime: float): float =
+  let calculate_proc_cpu_percentage (utime: int) (stime: int) (start_time: int) (sys_uptime: float): float =
       let total_time = float_of_int (utime + stime) in
       let uptime = sys_uptime *. clk_tck in
       let time_passed = uptime -. float_of_int start_time in
       (total_time /. time_passed) *. 100.0
-  let calculate_memory_percentage total_mem_kb vm_rss =
+  let calculate_proc_memory_percentage total_mem_kb vm_rss =
     let memory_usage = float_of_int vm_rss in
     (memory_usage /. (float_of_int total_mem_kb)) *. 100.0
 
   let calculate_process_list (total_mem_kb : int) (proc_ls: process_stats list) : process_stats_display list =
     List.map proc_ls ~f:(fun proc ->
-      (* let cpu_p= calculate_cpu_percentage proc.utime proc.stime proc.total_cpu_time in *)
-      let cpu_p= calculate_cpu_percentage proc.utime proc.stime proc.starttime proc.sys_uptime in
-      let mem_p = calculate_memory_percentage total_mem_kb proc.vm_rss in
+      let cpu_p= calculate_proc_cpu_percentage proc.utime proc.stime proc.starttime proc.sys_uptime in
+      let mem_p = calculate_proc_memory_percentage total_mem_kb proc.vm_rss in
       {
         pid = proc.pid;
         state = proc.state;
@@ -153,7 +154,7 @@ module Printer = struct
     clear_terminal ();  
   
     List.iter ~f:(fun cpu_stat ->
-      Printf.printf "%s[%s%.1f%%]\n" cpu_stat.cpu_id (print_bar cpu_stat.cpu_usage_pct 20) cpu_stat.cpu_usage_pct
+      Printf.printf "%s[%s%.4f%%]\n" cpu_stat.cpu_id (print_bar cpu_stat.cpu_usage_pct 20) cpu_stat.cpu_usage_pct
     ) output.all_cpu_stats;
     Printf.printf "\n";
 
@@ -174,12 +175,13 @@ module Printer = struct
     let swap_usage_pct = used_swap_gb /. total_swap_gb *. 100.0 in
     Printf.printf "Swp[%s%.2fM/%.2fM] \n" (print_bar swap_usage_pct 40) used_swap_gb total_swap_gb;
 
-    Printf.printf "\n%5s %10s %4s %4s %7s %s\n" "PID" "USER" "CPU%" "MEM%" "STATE" "COMMAND";
+    Printf.printf "\n%6s %10s %4s %4s %7s %s\n" "PID" "USER" "CPU%" "MEM%" "STATE" "COMMAND";
     
-    let first_ten_procs = List.take output.proc_ls 25 in
+    (* let first_ten_procs = List.take output.proc_ls 100 in *)
 
-    List.iter first_ten_procs ~f:(fun proc ->
-      Printf.printf "%5d %10s %4.1f %4.1f %7s %s\n"
+    (* List.iter first_ten_procs ~f:(fun proc -> *)
+    List.iter output.proc_ls ~f:(fun proc ->
+      Printf.printf "%6d %10s %4.1f %4.1f %7s %s\n"
         proc.pid
         proc.user
         proc.cpu_percentage
