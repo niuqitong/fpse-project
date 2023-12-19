@@ -1,53 +1,27 @@
-# A linux system performance monitoring tool
-## Progress
-- [x] basic realtime system running performance monitoring
-- [ ] sort, filter processes according to user's input
-- [ ] graphic display
+# FPSE Final Project: A Linux system performance monitoring tool
+Welcome to our Linux system performance monitoring tool written in OCaml! This tool provides a comprehensive set of features to monitor and analyze various aspects of your Linux system, allowing you to gain insights into its performance.
 
-# Quick Start
+# Features
+- [x] Capture real-time system information.
+- [x] Provide an organized report of system performance metrics.
+- [x] Allow user command to sort/filter processes list.
+
+
+# Getting Started
 ## Build
 Make sure you have the library `batteries` and `lwt` installed by running `opam install lwt` and `opam install batteries`. 
 
 Then run `dune build` to build the executable.
 
 ## Run
-After successfully building the executable, run `./_build/default/src/monitor.exe` to launch the program. The system monitor will start displaying the information in the terminal.
-```
-  
-      user input               usage
-      order by mem         ==> order_by ~mem:true process_list
-      order by state asc   ==> order_by ~state:true ~asc:true process_list
-      order by mem asc     ==> order_by ~mem:true ~asc:true process_list
+After building the executable successfully, run ./_build/default/src/monitor.exe to launch the program. The homepage gives clear instructions on valid user commands, triggering the monitor based on your specifications.
 
-  
-      user input                usage
-      select cpu > 0.5     ==>  filter ~cpu_range:(0.5, 100.0) process_list
-      select mem < 10      ==>  filter ~mem_range:(0.0, 10.0) process_list
-      select user = root   ==>  filter ~user:(Some "root")
-      select state = sleep ==>  filter ~state:(Some "sleep")
-
-  output format
-
-  0[||||||||        35.2%]  1[|||||||         29.9%]  
-  2[|||||           19.7%]  3[|||             13.3%]  
-  Tasks: 749, 2635 thr, 0 kthr; 4 running    
-  Load average: 3.23 3.08 2.99  
-  Mem[|||||||||||||||||                   10.2G/16.0G] 
-  Swp[                                          0K/0K]  
-
-```
+Here, you'll witness the tool capturing, calculating, and printing the required system information every second. Pressing enter smoothly takes you back to the homepage, ready for you to explore additional features.
 
 ## Test
 Our tests.ml in the `/tests` directory contains tests of the necessary utility functions for the program. 
 
 The specifications regarding preprocessing in `dune` allow the coverage check by running `bisect-ppx-report html` in the terminal.
-
-# TODOs
-- [ ] handle user input, `monitor.ml`, call corresponding functions
-- [ ] collect system running statistics as data stream, `calculator.ml`
-- [x] implement sort, filter functions, `calculator.ml`
-- [ ] plot stream data and display, simply print to console or use specialized library for GUI, `plot.ml` . 
-
 
 # [Project Proposal](./Proposal/proposal.md)
 
