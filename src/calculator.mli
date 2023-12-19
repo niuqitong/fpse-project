@@ -14,7 +14,7 @@ type cpu_usage_display = {
 type process_stats_display = {
   pid: int;
   user: string;
-  state: string;  (* e.g., "running", "sleeping", etc. *)
+  state: string;  
   cpu_percentage: float;
   mem_percentage: float;
   command: string;
@@ -22,8 +22,8 @@ type process_stats_display = {
 
 type calculator_output = {
   all_cpu_stats: cpu_usage_display list;
-  memory_usage_gb: float * float; (* (Used Memory, all memory) in GB *)
-  swap_usage_gb: float * float; (* (Used swap, all Swap) in GB *)
+  memory_usage_gb: float * float; 
+  swap_usage_gb: float * float; 
   load_avg: load_average_stats;
   process_cnt: process_count;
   proc_ls: process_stats_display list;
@@ -41,11 +41,8 @@ module Query : sig
   val compare_user : process_stats_display -> process_stats_display -> int
   val compare_state : process_stats_display -> process_stats_display -> int
   val compare_cpu : process_stats_display -> process_stats_display -> int
-  
   val compare_mem : process_stats_display -> process_stats_display -> int
-
   val order_by : ?cpu:bool -> ?mem:bool -> ?user:bool -> ?pid:bool -> ?state:bool -> ?asc:bool -> process_stats_display list -> process_stats_display list
-
   val filter : ?cpu_range:(float * float) -> ?mem_range:(float * float) -> ?state:string -> ?user:string -> process_stats_display list -> process_stats_display list
 end
 
