@@ -9,19 +9,36 @@ Welcome to our Linux system performance monitoring tool written in OCaml! This t
 
 # Getting Started
 ## Build
-Make sure you have the library `batteries` and `lwt` installed by running `opam install lwt` and `opam install batteries`. 
-
-Then run `dune build` to build the executable.
+### Install Dependencies
+```bash
+opam install lwt  
+opam install batteries
+```
+### Build
+```bash
+dune build
+```
 
 ## Run
-After building the executable successfully, run `./_build/default/src/monitor.exe` to launch the program. The homepage gives clear instructions on valid user commands, triggering the monitor based on your specifications.
+```bash
+cd _build/default/src  
 
-Here, you'll witness the tool capturing, calculating, and printing the required system information every second. Pressing enter smoothly takes you back to the homepage, ready for you to explore additional features.
+./monitor.exe
+```
+After building the executable successfully, run `./_build/default/src/monitor.exe` to launch the program. The homepage gives clear instructions on valid user commands that give the information based on your specifications.
+
+Here, you'll see the tool capturing, calculating, and printing the required system information every second. Pressing `return` takes you back to the homepage, ready for you to explore additional features.
 
 ## Test
-Our tests.ml in the `/tests` directory contains tests of the necessary utility functions for the program. 
-
-The specifications regarding preprocessing in `dune` allow the coverage check by running `bisect-ppx-report html` in the terminal.
+```bash
+dune test 
+```
+## Generate coverage report
+```bash
+bisect-ppx-report html
+```
+Our tests.ml in the `/tests` directory contains tests of the necessary utility functions for the program.   
+The specifications regarding preprocessing in `dune` allow the coverage check by running `bisect-ppx-report html` in the terminal. The coverage report will be `./_coverage/index.html`.
 
 # [Project Proposal](./Proposal/proposal.md)
 

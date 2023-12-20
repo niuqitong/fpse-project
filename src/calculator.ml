@@ -216,7 +216,7 @@ module Printer = struct
       (ansi_fg_yellow ^ print_bar swap_usage_pct 40 ^ ansi_reset)
       used_swap_gb total_swap_gb ansi_reset;
 
-    Printf.printf "\n%s%5s %10s %4s %4s %7s %s%s\n" ansi_bg_green "PID" "USER"
+    Printf.printf "\n%s%6s %10s %4s %4s %7s %s%s\n" ansi_bg_green "PID" "USER"
       "CPU%" "MEM%" "STATE" "COMMAND" ansi_reset;
 
     List.iter output.proc_ls ~f:(fun proc ->
